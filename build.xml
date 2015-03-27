@@ -1,0 +1,73 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project name="project" default="default" basedir="."
+	xmlns:fx="javafx:com.sun.javafx.tools.ant">
+	<description>RMIExample</description>
+
+	<taskdef resource="com/sun/javafx/tools/ant/antlib.xml"
+		uri="javafx:com.sun.javafx.tools.ant"
+		classpath=".:${java.home}/../lib/ant-javafx.jar" />
+
+	<target name="default" description="全部ビルド"
+		depends="makeServer, makeClient">
+	</target>
+
+	<target name="makeCommon" description="共通部のビルド">
+		<delete dir="bin"/>
+		<mkdir dir="bin"/>
+		<javac srcdir="src" destdir="bin"
+			includeantruntime="false"/>
+	</target>
+
+	<target name="makeServer" description="サーバのビルド"
+		depends="makeCommon">
+		<delete dir="server_bin"/>
+		<mkdir dir="server_bin"/>
+		<javac srcdir="server_src" destdir="server_bin"
+			includeantruntime="false">
+			<classpath>
+				<pathelement path="bin"/>
+			</classpath>
+		</javac>
+
+		<fx:jar destfile="RMIExampleServer.jar">
+			<fx:application name="RMIExample Server"
+				mainClass="jp.seraphyware.rmiexample.ServerMain"/>
+
+			<fileset dir="bin"/>
+			<fileset dir="server_bin"/>
+			<fileset dir="server_src" excludes="**/*.java"/>
+
+			<manifest>
+				<attribute name="Implementation-Vendor" value="seraphyware.jp"/>
+				<attribute name="Implementation-Version" value="1.0"/>
+			</manifest>
+		</fx:jar>
+	</target>
+
+	<target name="makeClient" description="クライアントのビルド"
+		depends="makeCommon">
+		<delete dir="client_bin"/>
+		<mkdir dir="client_bin"/>
+		<javac srcdir="client_src" destdir="client_bin"
+			includeantruntime="false">
+			<classpath>
+				<pathelement path="bin"/>
+			</classpath>
+		</javac>
+
+		<fx:jar destfile="RMIExampleClient.jar">
+			<fx:application name="RMIExample Client"
+				mainClass="jp.seraphyware.rmiexample.client.ClientMain"/>
+
+			<fileset dir="bin"/>
+			<fileset dir="client_bin"/>
+			<fileset dir="client_src" excludes="**/*.java"/>
+
+			<manifest>
+				<attribute name="Implementation-Vendor" value="seraphyware.jp"/>
+				<attribute name="Implementation-Version" value="1.0"/>
+			</manifest>
+		</fx:jar>
+	</target>
+
+</project>
