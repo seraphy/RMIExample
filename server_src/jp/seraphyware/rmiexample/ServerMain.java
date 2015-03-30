@@ -2,10 +2,12 @@ package jp.seraphyware.rmiexample;
 
 import java.rmi.AlreadyBoundException;
 import java.rmi.NoSuchObjectException;
+import java.rmi.NotBoundException;
 import java.rmi.RemoteException;
 import java.rmi.registry.LocateRegistry;
 import java.rmi.registry.Registry;
 import java.rmi.server.UnicastRemoteObject;
+import java.time.LocalDateTime;
 
 /**
  * RMIサーバー
@@ -47,14 +49,29 @@ public final class ServerMain {
 			throw new IllegalStateException();
 		}
 
-		obj = new RMIExampleObject();
-		obj.sayHello();
-
-		RMIExample stub = (RMIExample) UnicastRemoteObject.exportObject(obj, 0);
-
 		registry = LocateRegistry.createRegistry(port);
+
+		obj = new RMIExampleObject();
+		RMIExample stub = (RMIExample) UnicastRemoteObject.exportObject(obj, 0);
 		registry.bind("RMIExample", stub);
+
 		System.out.println("★start");
+
+		testLocal(port);
+	}
+
+	private void testLocal(int port) {
+		try {
+			Registry registry = LocateRegistry.getRegistry(port);
+			RMIExample example = (RMIExample) registry.lookup("RMIExample");
+			Message message = new Message();
+			message.setTime(LocalDateTime.now());
+			message.setMessage("★FROM LOCAL★");
+			example.sayHello(message);
+
+		} catch (RemoteException | NotBoundException ex) {
+			ex.printStackTrace();
+		}
 	}
 
 	/**

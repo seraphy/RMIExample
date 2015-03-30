@@ -12,7 +12,15 @@ public interface RMIExample extends Remote {
 	 * Hello, Worldをサーバー上で表示する.
 	 * @throws RemoteException
 	 */
-	void sayHello() throws RemoteException;
+	void sayHello(Message message) throws RemoteException;
+
+	/**
+	 * サーバからコールバックを返す.
+	 * @param msg メッセージ
+	 * @param callback コールバック
+	 * @throws RemoteException
+	 */
+	void doCallback(String msg, RMIExampleCallback callback) throws RemoteException;
 
 	/**
 	 * サーバを停止する

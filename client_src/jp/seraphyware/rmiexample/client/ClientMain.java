@@ -3,6 +3,9 @@ package jp.seraphyware.rmiexample.client;
 import java.rmi.RemoteException;
 import java.rmi.registry.LocateRegistry;
 import java.rmi.registry.Registry;
+import java.rmi.server.UnicastRemoteObject;
+import java.rmi.server.Unreferenced;
+import java.time.LocalDateTime;
 import java.util.ResourceBundle;
 
 import javafx.application.Application;
@@ -16,7 +19,9 @@ import javafx.scene.control.Button;
 import javafx.scene.control.TextField;
 import javafx.stage.Stage;
 import jp.seraphyware.rmiexample.ErrorDialogUtils;
+import jp.seraphyware.rmiexample.Message;
 import jp.seraphyware.rmiexample.RMIExample;
+import jp.seraphyware.rmiexample.RMIExampleCallback;
 
 
 /**
@@ -47,11 +52,13 @@ public class ClientMain extends Application {
 	Button btnSayHello;
 
 	@FXML
+	Button btnSimpleCallback;
+
+	@FXML
 	Button btnShutdown;
 
 	@Override
 	public void start(Stage primaryStage) throws Exception {
-
 		// FXMLファイルとリソースバンドルより画面を構成する
 		ResourceBundle resource = ResourceBundle.getBundle(getClass().getName());
 		FXMLLoader loader = new FXMLLoader(getClass().getResource(
@@ -65,10 +72,12 @@ public class ClientMain extends Application {
 		// ボタンの制御
 		btnLookup.setOnAction(this::handleLookup);
 		btnSayHello.setOnAction(this::handleSayHello);
+		btnSimpleCallback.setOnAction(this::handleDoLambda);
 		btnShutdown.setOnAction(this::handleShutdown);
 
 		btnLookup.disableProperty().bind(lookuped);
 		btnSayHello.disableProperty().bind(lookuped.not());
+		btnSimpleCallback.disableProperty().bind(lookuped.not());
 		btnShutdown.disableProperty().bind(lookuped.not());
 
 		// 初期値
@@ -103,7 +112,59 @@ public class ClientMain extends Application {
 	 * @param event
 	 */
 	protected void handleSayHello(ActionEvent event) {
-		handleAction(remote -> remote.sayHello());
+		Message message = new Message();
+		message.setTime(LocalDateTime.now());
+		message.setMessage("FROM-CLIENT!");
+		handleAction(remote -> remote.sayHello(message));
+	}
+
+
+	/**
+	 * コールバック用クラス.
+	 * クライアント側から参照が切れた場合に通知を受ける.
+	 */
+	public static abstract class RMIExampleCallbackImpl extends UnicastRemoteObject
+		implements RMIExampleCallback, Unreferenced {
+
+		public RMIExampleCallbackImpl() throws RemoteException {
+			super(0);
+		}
+
+		@Override
+		public void unreferenced() {
+			System.out.println("★★★unreferenced: " + this);
+			try {
+				// クライアントからunreferenceされたら、アンエクスポートする.
+				UnicastRemoteObject.unexportObject(this, true);
+
+			} catch (RemoteException ex) {
+				ex.printStackTrace();
+			}
+		}
+	}
+
+
+	/**
+	 * Callbackボタン押下時
+	 * @param event
+	 */
+	protected void handleDoLambda(ActionEvent event) {
+		try {
+			// コールバック用のオブジェクトを作成しエクスポートする.
+			// (クライアントからunreferenceされたら、アンエクスポートする.)
+			RMIExampleCallbackImpl callback = new RMIExampleCallbackImpl() {
+				@Override
+				public void callback(Message message) throws RemoteException {
+					System.out.println("★RMIExampleCallback=" + message);
+				}
+			};
+
+			// コールバック
+			handleAction(remote -> remote.doCallback("Client", callback));
+
+		} catch (RemoteException ex) {
+			ErrorDialogUtils.showException(ex);
+		}
 	}
 
 	/**

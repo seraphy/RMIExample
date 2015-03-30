@@ -17,3 +17,7 @@ RMIExampleServerはコンソールアプリであり、第一引数にポート�
 ## RMIExampleClient
 RMIExampleClientはJavaFX8によるGUIアプリである。
 接続先のホスト名とボートを指定してRMIを接続する。
+
+クライアント・サーバ間で受け渡すシリアライズ型のデータの例の他、
+コールバックオブジェクトをエクスポートするメソッド例もある。
+

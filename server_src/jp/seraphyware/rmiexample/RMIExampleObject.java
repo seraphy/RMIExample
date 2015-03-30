@@ -3,6 +3,7 @@ package jp.seraphyware.rmiexample;
 import java.rmi.RemoteException;
 import java.rmi.server.RemoteServer;
 import java.rmi.server.ServerNotActiveException;
+import java.time.LocalDateTime;
 
 /**
  * 公開オブジェクト用クラス
@@ -10,7 +11,7 @@ import java.rmi.server.ServerNotActiveException;
 public class RMIExampleObject implements RMIExample {
 
 	@Override
-	public void sayHello() throws RemoteException {
+	public void sayHello(Message message) throws RemoteException {
 		// 接続元クライアントのホスト情報を文字列で取得する.
 		String clientHost;
 		try {
@@ -22,7 +23,15 @@ public class RMIExampleObject implements RMIExample {
 		}
 
 		// Hello Worldを表示する.
-		System.out.println("Hello World!! (" + clientHost + ")");
+		System.out.println("Hello World!! (" + clientHost + ") " + message);
+	}
+
+	@Override
+	public void doCallback(String msg, RMIExampleCallback callback) throws RemoteException {
+		Message message = new Message();
+		message.setTime(LocalDateTime.now());
+		message.setMessage(msg + "★ FROM SERVER!");
+		callback.callback(message);
 	}
 
 	@Override
@@ -31,6 +40,7 @@ public class RMIExampleObject implements RMIExample {
 		inst.stop();
 
 		// ※ 公開停止後、Sleepとガベージコレクトしても接続は即時には切れないようだ
+		// ※ コールバック用に受け取ったリモートオブジェクトも解放させる.
 		try {
 			for (int idx = 0; idx < 3; idx++) {
 				System.gc();

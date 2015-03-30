@@ -37,6 +37,7 @@
          <children>
             <Button fx:id="btnLookup" mnemonicParsing="false" text="%lookup" />
             <Button fx:id="btnSayHello" mnemonicParsing="false" text="%sayHello" />
+            <Button fx:id="btnSimpleCallback" mnemonicParsing="false" text="%simpleCallback" />
             <Button fx:id="btnShutdown" mnemonicParsing="false" text="%shutdown" />
          </children>
       </FlowPane>
