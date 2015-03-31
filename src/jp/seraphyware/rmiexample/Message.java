@@ -1,8 +1,5 @@
 package jp.seraphyware.rmiexample;
 
-import java.io.IOException;
-import java.io.ObjectInputStream;
-import java.io.ObjectOutputStream;
 import java.io.Serializable;
 import java.time.LocalDateTime;
 
@@ -14,17 +11,17 @@ public class Message implements Serializable {
 
 	private LocalDateTime time;
 
-	private void writeObject(ObjectOutputStream outstm) throws IOException {
-		// シリアライズが行われていることを示す
-		System.out.println("★★writeObject★★");
-		outstm.defaultWriteObject();
-	}
-
-	private void readObject(ObjectInputStream inpstm) throws IOException, ClassNotFoundException {
-		inpstm.defaultReadObject();
-		// デシリアライズが行われていることを示す
-		System.out.println("★★readObject★★");
-	}
+//	private void writeObject(ObjectOutputStream outstm) throws IOException {
+//		// シリアライズが行われていることを示す
+//		System.out.println("★★writeObject★★");
+//		outstm.defaultWriteObject();
+//	}
+//
+//	private void readObject(ObjectInputStream inpstm) throws IOException, ClassNotFoundException {
+//		inpstm.defaultReadObject();
+//		// デシリアライズが行われていることを示す
+//		System.out.println("★★readObject★★");
+//	}
 
 	public void setTime(LocalDateTime time) {
 		this.time = time;

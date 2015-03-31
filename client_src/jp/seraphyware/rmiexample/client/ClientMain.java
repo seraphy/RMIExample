@@ -1,5 +1,6 @@
 package jp.seraphyware.rmiexample.client;
 
+import java.net.URL;
 import java.rmi.RemoteException;
 import java.rmi.registry.LocateRegistry;
 import java.rmi.registry.Registry;
@@ -13,6 +14,7 @@ import javafx.beans.property.SimpleBooleanProperty;
 import javafx.event.ActionEvent;
 import javafx.fxml.FXML;
 import javafx.fxml.FXMLLoader;
+import javafx.fxml.Initializable;
 import javafx.scene.Parent;
 import javafx.scene.Scene;
 import javafx.scene.control.Button;
@@ -27,12 +29,12 @@ import jp.seraphyware.rmiexample.RMIExampleCallback;
 /**
  * RMIクライアント(GUI)
  */
-public class ClientMain extends Application {
+public class ClientMain extends Application implements Initializable {
 
 	/**
 	 * Lookupされているか示す
 	 */
-	private SimpleBooleanProperty lookuped = new SimpleBooleanProperty();
+	private SimpleBooleanProperty lookuped = new SimpleBooleanProperty(this, "lookuped");
 
 	/**
 	 * リモートスタブ
@@ -57,24 +59,20 @@ public class ClientMain extends Application {
 	@FXML
 	Button btnShutdown;
 
+	/**
+	 * FXMLが読み込まれコントローラとフィールドが結び付けられた後で、
+	 * FXMLLoaderより呼び出される.
+	 */
 	@Override
-	public void start(Stage primaryStage) throws Exception {
-		// FXMLファイルとリソースバンドルより画面を構成する
-		ResourceBundle resource = ResourceBundle.getBundle(getClass().getName());
-		FXMLLoader loader = new FXMLLoader(getClass().getResource(
-				getClass().getSimpleName() + ".fxml"), resource);
-		loader.setControllerFactory((Class<?> cls) -> {
-			// コントローラは、このインスタンス自身を使用する.
-			return this;
+	public void initialize(URL location, ResourceBundle resources) {
+		// テキストフィールドの制御
+		txtPort.textProperty().addListener((ob, oldValue, newValue)->{
+			if (!oldValue.equals(newValue) && !newValue.matches("[0-9]+")) {
+				txtPort.setText(oldValue);
+			}
 		});
-		Parent root = (Parent) loader.load();
 
 		// ボタンの制御
-		btnLookup.setOnAction(this::handleLookup);
-		btnSayHello.setOnAction(this::handleSayHello);
-		btnSimpleCallback.setOnAction(this::handleDoLambda);
-		btnShutdown.setOnAction(this::handleShutdown);
-
 		btnLookup.disableProperty().bind(lookuped);
 		btnSayHello.disableProperty().bind(lookuped.not());
 		btnSimpleCallback.disableProperty().bind(lookuped.not());
@@ -83,6 +81,19 @@ public class ClientMain extends Application {
 		// 初期値
 		txtPort.setText(Integer.toString(Registry.REGISTRY_PORT));
 		txtURL.setText("localhost");
+	}
+
+	@Override
+	public void start(Stage primaryStage) throws Exception {
+		// FXMLファイルとリソースバンドルより画面を構成する
+		ResourceBundle resource = ResourceBundle.getBundle(getClass().getName());
+		FXMLLoader loader = new FXMLLoader(getClass().getResource(
+				getClass().getSimpleName() + ".fxml"), resource);
+
+		// コントローラは明示的に、このオブジェクトに関連づける
+		loader.setController(this);
+
+		Parent root = (Parent) loader.load();
 
 		// 表示
 		primaryStage.setScene(new Scene(root));
@@ -93,6 +104,7 @@ public class ClientMain extends Application {
 	 * Lookupボタン押下時
 	 * @param event
 	 */
+	@FXML
 	protected void handleLookup(ActionEvent event) {
 		try {
 			String url = txtURL.getText();
@@ -111,11 +123,12 @@ public class ClientMain extends Application {
 	 * SayHelloボタン押下時
 	 * @param event
 	 */
+	@FXML
 	protected void handleSayHello(ActionEvent event) {
 		Message message = new Message();
 		message.setTime(LocalDateTime.now());
 		message.setMessage("FROM-CLIENT!");
-		handleAction(remote -> remote.sayHello(message));
+		RemoteAction.doRun(remote, remote -> remote.sayHello(message));
 	}
 
 
@@ -135,7 +148,8 @@ public class ClientMain extends Application {
 			System.out.println("★★★unreferenced: " + this);
 			try {
 				// クライアントからunreferenceされたら、アンエクスポートする.
-				UnicastRemoteObject.unexportObject(this, true);
+				// (※ 参照カウントが０になるたびに何度でも呼び出される)
+				UnicastRemoteObject.unexportObject(this, false);
 
 			} catch (RemoteException ex) {
 				ex.printStackTrace();
@@ -148,7 +162,8 @@ public class ClientMain extends Application {
 	 * Callbackボタン押下時
 	 * @param event
 	 */
-	protected void handleDoLambda(ActionEvent event) {
+	@FXML
+	protected void handleDoCallback(ActionEvent event) {
 		try {
 			// コールバック用のオブジェクトを作成しエクスポートする.
 			// (クライアントからunreferenceされたら、アンエクスポートする.)
@@ -160,7 +175,11 @@ public class ClientMain extends Application {
 			};
 
 			// コールバック
-			handleAction(remote -> remote.doCallback("Client", callback));
+			RemoteAction.doRun(remote, remote -> remote.doCallback("Client", callback));
+
+			// クライアント側が保持しないことが明らかであれば、
+			// コールバック終了後にエクスポートを解除してもよい
+			//UnicastRemoteObject.unexportObject(callback, false);
 
 		} catch (RemoteException ex) {
 			ErrorDialogUtils.showException(ex);
@@ -171,38 +190,12 @@ public class ClientMain extends Application {
 	 * Shutdownボタン押下時
 	 * @param event
 	 */
+	@FXML
 	protected void handleShutdown(ActionEvent event) {
-		handleAction(remote -> System.out.println(remote.shutdown()));
+		RemoteAction.doRun(remote, remote -> System.out.println(remote.shutdown()));
 
 		// 正常終了した場合はサーバ側が停止している
 		lookuped.set(false);
-	}
-
-	/**
-	 * リモート呼び出し用ヘルパ
-	 * @param <T>
-	 */
-	@FunctionalInterface
-	private interface RemoteAction<T> {
-		void run(T remote) throws RemoteException;
-	}
-
-	/**
-	 * リモート呼び出しを行う.<br>
-	 * リモート例外が発生した場合はエラーダイアログを表示する.
-	 * @param remoteAction
-	 */
-	protected void handleAction(RemoteAction<RMIExample> remoteAction) {
-		try {
-			if (remote == null) {
-				throw new IllegalStateException();
-			}
-
-			remoteAction.run(remote);
-
-		} catch (Exception ex) {
-			ErrorDialogUtils.showException(ex);
-		}
 	}
 
 	/**
@@ -214,3 +207,4 @@ public class ClientMain extends Application {
 		launch(args);
 	}
 }
+

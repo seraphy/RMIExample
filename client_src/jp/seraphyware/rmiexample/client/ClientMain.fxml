@@ -5,9 +5,7 @@
 <?import java.lang.*?>
 <?import javafx.scene.layout.*?>
 
-
-<AnchorPane maxHeight="-Infinity" maxWidth="-Infinity" minHeight="-Infinity" minWidth="-Infinity" prefHeight="114.0" prefWidth="340.0" xmlns="http://javafx.com/javafx/8" xmlns:fx="http://javafx.com/fxml/1"
-	fx:controller="jp.seraphyware.rmiexample.client.ClientMain">
+<AnchorPane maxHeight="-Infinity" maxWidth="-Infinity" minHeight="-Infinity" minWidth="-Infinity" prefHeight="114.0" prefWidth="381.0" xmlns="http://javafx.com/javafx/8" xmlns:fx="http://javafx.com/fxml/1">
    <children>
       <GridPane layoutX="14.0" layoutY="14.0" prefHeight="60.0" prefWidth="332.0" AnchorPane.leftAnchor="14.0" AnchorPane.rightAnchor="14.0" AnchorPane.topAnchor="14.0">
         <columnConstraints>
@@ -35,10 +33,10 @@
       </GridPane>
       <FlowPane alignment="BOTTOM_RIGHT" hgap="5.0" layoutX="9.0" layoutY="81.0" prefHeight="26.0" prefWidth="325.0" AnchorPane.bottomAnchor="5.0" AnchorPane.leftAnchor="5.0" AnchorPane.rightAnchor="5.0">
          <children>
-            <Button fx:id="btnLookup" mnemonicParsing="false" text="%lookup" />
-            <Button fx:id="btnSayHello" mnemonicParsing="false" text="%sayHello" />
-            <Button fx:id="btnSimpleCallback" mnemonicParsing="false" text="%simpleCallback" />
-            <Button fx:id="btnShutdown" mnemonicParsing="false" text="%shutdown" />
+            <Button fx:id="btnLookup" mnemonicParsing="false" onAction="#handleLookup" text="%lookup" />
+            <Button fx:id="btnSayHello" mnemonicParsing="false" onAction="#handleSayHello" text="%sayHello" />
+            <Button fx:id="btnSimpleCallback" mnemonicParsing="false" onAction="#handleDoCallback" text="%simpleCallback" />
+            <Button fx:id="btnShutdown" mnemonicParsing="false" onAction="#handleShutdown" text="%shutdown" />
          </children>
       </FlowPane>
    </children>
