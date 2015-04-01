@@ -1,5 +1,9 @@
 package jp.seraphyware.rmiexample;
 
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.OutputStream;
+import java.io.PrintWriter;
 import java.rmi.RemoteException;
 import java.rmi.server.RemoteServer;
 import java.rmi.server.ServerNotActiveException;
@@ -8,7 +12,7 @@ import java.time.LocalDateTime;
 /**
  * 公開オブジェクト用クラス
  */
-public class RMIExampleObject implements RMIExample {
+public class RMIExampleObject implements RMIServer {
 
 	@Override
 	public void sayHello(Message message) throws RemoteException {
@@ -32,6 +36,41 @@ public class RMIExampleObject implements RMIExample {
 		message.setTime(LocalDateTime.now());
 		message.setMessage(msg + "★ FROM SERVER!");
 		callback.callback(message);
+	}
+
+	@Override
+	public void send(String name, RMIInputStream ris) throws RemoteException {
+		if (name.contains("\\") || name.contains("/") || name.contains("..")) {
+			throw new IllegalArgumentException("不正な名前です: " + name);
+		}
+		new Thread(() -> {
+			System.out.println("name=" + name);
+			try (InputStream is = new RMIInputStreamClientImpl(ris)) {
+				int ch;
+				while ((ch = is.read()) > 0) {
+					System.out.println(ch);
+					Thread.sleep(1000);
+				}
+				is.close();
+
+			} catch (IOException | InterruptedException ex) {
+				ex.printStackTrace();
+			}
+		}).start();
+	}
+
+	@Override
+	public void recv(String name, RMIOutputStream ros) throws RemoteException {
+		if (name.contains("\\") || name.contains("/") || name.contains("..")) {
+			throw new IllegalArgumentException("不正な名前です: " + name);
+		}
+		try (OutputStream os = new RMIOutputStreamClientImpl(ros);
+			PrintWriter pw = new PrintWriter(os);) {
+			pw.println("データ送信テスト！");
+
+		} catch (IOException ex) {
+			ex.printStackTrace();
+		}
 	}
 
 	@Override

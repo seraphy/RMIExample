@@ -1,5 +1,8 @@
 package jp.seraphyware.rmiexample.client;
 
+import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
+import java.io.IOException;
 import java.net.URL;
 import java.rmi.RemoteException;
 import java.rmi.registry.LocateRegistry;
@@ -22,8 +25,13 @@ import javafx.scene.control.TextField;
 import javafx.stage.Stage;
 import jp.seraphyware.rmiexample.ErrorDialogUtils;
 import jp.seraphyware.rmiexample.Message;
-import jp.seraphyware.rmiexample.RMIExample;
 import jp.seraphyware.rmiexample.RMIExampleCallback;
+import jp.seraphyware.rmiexample.RMIInputStream;
+import jp.seraphyware.rmiexample.RMIInputStreamImpl;
+import jp.seraphyware.rmiexample.RMIOutputStream;
+import jp.seraphyware.rmiexample.RMIOutputStreamImpl;
+import jp.seraphyware.rmiexample.RMIServer;
+import jp.seraphyware.rmiexample.XMLResourceBundleControl;
 
 
 /**
@@ -39,7 +47,7 @@ public class ClientMain extends Application implements Initializable {
 	/**
 	 * リモートスタブ
 	 */
-	private RMIExample remote;
+	private RMIServer remote;
 
 	@FXML
 	TextField txtURL;
@@ -55,6 +63,12 @@ public class ClientMain extends Application implements Initializable {
 
 	@FXML
 	Button btnSimpleCallback;
+
+	@FXML
+	Button btnSendFile;
+
+	@FXML
+	Button btnRecvFile;
 
 	@FXML
 	Button btnShutdown;
@@ -76,6 +90,8 @@ public class ClientMain extends Application implements Initializable {
 		btnLookup.disableProperty().bind(lookuped);
 		btnSayHello.disableProperty().bind(lookuped.not());
 		btnSimpleCallback.disableProperty().bind(lookuped.not());
+		btnSendFile.disableProperty().bind(lookuped.not());
+		btnRecvFile.disableProperty().bind(lookuped.not());
 		btnShutdown.disableProperty().bind(lookuped.not());
 
 		// 初期値
@@ -86,7 +102,8 @@ public class ClientMain extends Application implements Initializable {
 	@Override
 	public void start(Stage primaryStage) throws Exception {
 		// FXMLファイルとリソースバンドルより画面を構成する
-		ResourceBundle resource = ResourceBundle.getBundle(getClass().getName());
+		ResourceBundle resource = ResourceBundle.getBundle(
+				getClass().getName(), new XMLResourceBundleControl());
 		FXMLLoader loader = new FXMLLoader(getClass().getResource(
 				getClass().getSimpleName() + ".fxml"), resource);
 
@@ -94,6 +111,9 @@ public class ClientMain extends Application implements Initializable {
 		loader.setController(this);
 
 		Parent root = (Parent) loader.load();
+
+		// タイトル
+		primaryStage.setTitle(resource.getString("title"));
 
 		// 表示
 		primaryStage.setScene(new Scene(root));
@@ -110,7 +130,7 @@ public class ClientMain extends Application implements Initializable {
 			String url = txtURL.getText();
 			int port = Integer.parseInt(txtPort.getText());
 			Registry registry = LocateRegistry.getRegistry(url, port);
-			this.remote = (RMIExample) registry.lookup("RMIExample");
+			this.remote = (RMIServer) registry.lookup("RMIExample");
 			lookuped.set(true);
 
 		} catch (Exception ex) {
@@ -182,6 +202,41 @@ public class ClientMain extends Application implements Initializable {
 			//UnicastRemoteObject.unexportObject(callback, false);
 
 		} catch (RemoteException ex) {
+			ErrorDialogUtils.showException(ex);
+		}
+	}
+
+	/**
+	 * ファイルの送信テスト(擬似)
+	 * @param event
+	 */
+	@FXML
+	protected void handleSendFile(ActionEvent event) {
+		ByteArrayInputStream bis = new ByteArrayInputStream("hello, world".getBytes());
+		try {
+			RMIInputStream ris = new RMIInputStreamImpl(bis);
+			RemoteAction.doRun(remote, remote -> remote.send("sendFile",ris));
+
+		} catch (IOException ex) {
+			ErrorDialogUtils.showException(ex);
+		}
+	}
+
+	/**
+	 * ファイルの受信テスト(擬似)
+	 * @param event
+	 */
+	@FXML
+	protected void handleRecvFile(ActionEvent event) {
+		ByteArrayOutputStream bos = new ByteArrayOutputStream();
+		try {
+			try (RMIOutputStream ros = new RMIOutputStreamImpl(bos)) {
+				RemoteAction.doRun(remote, remote -> remote.recv("recvFile", ros));
+			}
+			String msg = new String(bos.toByteArray());
+			System.out.println("recv: " + msg);
+
+		} catch (IOException ex) {
 			ErrorDialogUtils.showException(ex);
 		}
 	}

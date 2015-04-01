@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE properties SYSTEM "http://java.sun.com/dtd/properties.dtd">
+<properties>
+<comment>Client Main</comment>
+
+<entry key="title">RMIExample (Client)</entry>
+
+<entry key="servername">Server Name</entry>
+<entry key="serverport">Server Port</entry>
+<entry key="lookup">Lookup</entry>
+<entry key="sayHello">Say Hello</entry>
+<entry key="simpleCallback">Callback</entry>
+<entry key="sendFile">Send File</entry>
+<entry key="recvFile">Recv File</entry>
+<entry key="shutdown">Shutdown</entry>
+
+</properties>
+

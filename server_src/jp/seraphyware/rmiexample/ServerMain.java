@@ -52,7 +52,7 @@ public final class ServerMain {
 		registry = LocateRegistry.createRegistry(port);
 
 		obj = new RMIExampleObject();
-		RMIExample stub = (RMIExample) UnicastRemoteObject.exportObject(obj, 0);
+		RMIServer stub = (RMIServer) UnicastRemoteObject.exportObject(obj, 0);
 		registry.bind("RMIExample", stub);
 
 		System.out.println("★start");
@@ -63,7 +63,7 @@ public final class ServerMain {
 	private void testLocal(int port) {
 		try {
 			Registry registry = LocateRegistry.getRegistry(port);
-			RMIExample example = (RMIExample) registry.lookup("RMIExample");
+			RMIServer example = (RMIServer) registry.lookup("RMIExample");
 			Message message = new Message();
 			message.setTime(LocalDateTime.now());
 			message.setMessage("★FROM LOCAL★");

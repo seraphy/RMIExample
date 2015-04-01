@@ -5,9 +5,9 @@
 <?import java.lang.*?>
 <?import javafx.scene.layout.*?>
 
-<AnchorPane maxHeight="-Infinity" maxWidth="-Infinity" minHeight="-Infinity" minWidth="-Infinity" prefHeight="114.0" prefWidth="381.0" xmlns="http://javafx.com/javafx/8" xmlns:fx="http://javafx.com/fxml/1">
+<AnchorPane maxHeight="-Infinity" maxWidth="-Infinity" minHeight="-Infinity" minWidth="-Infinity" prefHeight="114.0" prefWidth="480.0" xmlns="http://javafx.com/javafx/8" xmlns:fx="http://javafx.com/fxml/1">
    <children>
-      <GridPane layoutX="14.0" layoutY="14.0" prefHeight="60.0" prefWidth="332.0" AnchorPane.leftAnchor="14.0" AnchorPane.rightAnchor="14.0" AnchorPane.topAnchor="14.0">
+      <GridPane layoutX="14.0" layoutY="14.0" prefHeight="60.0" prefWidth="400.0" AnchorPane.leftAnchor="14.0" AnchorPane.rightAnchor="14.0" AnchorPane.topAnchor="14.0">
         <columnConstraints>
           <ColumnConstraints hgrow="SOMETIMES" maxWidth="1.7976931348623157E308" percentWidth="0.0" />
           <ColumnConstraints hgrow="SOMETIMES" maxWidth="1.7976931348623157E308" />
@@ -36,6 +36,8 @@
             <Button fx:id="btnLookup" mnemonicParsing="false" onAction="#handleLookup" text="%lookup" />
             <Button fx:id="btnSayHello" mnemonicParsing="false" onAction="#handleSayHello" text="%sayHello" />
             <Button fx:id="btnSimpleCallback" mnemonicParsing="false" onAction="#handleDoCallback" text="%simpleCallback" />
+            <Button fx:id="btnSendFile" mnemonicParsing="false" onAction="#handleSendFile" text="%sendFile" />
+            <Button fx:id="btnRecvFile" mnemonicParsing="false" onAction="#handleRecvFile" text="%recvFile" />
             <Button fx:id="btnShutdown" mnemonicParsing="false" onAction="#handleShutdown" text="%shutdown" />
          </children>
       </FlowPane>
