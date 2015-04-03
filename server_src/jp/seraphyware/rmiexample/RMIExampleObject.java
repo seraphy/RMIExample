@@ -8,11 +8,14 @@ import java.rmi.RemoteException;
 import java.rmi.server.RemoteServer;
 import java.rmi.server.ServerNotActiveException;
 import java.time.LocalDateTime;
+import java.util.logging.Logger;
 
 /**
  * 公開オブジェクト用クラス
  */
 public class RMIExampleObject implements RMIServer {
+
+	private final Logger logger = Logger.getLogger(getClass().getName());
 
 	@Override
 	public void sayHello(Message message) throws RemoteException {
@@ -27,7 +30,7 @@ public class RMIExampleObject implements RMIServer {
 		}
 
 		// Hello Worldを表示する.
-		System.out.println("Hello World!! (" + clientHost + ") " + message);
+		logger.info("Hello World!! (" + clientHost + ") " + message);
 	}
 
 	@Override
@@ -40,6 +43,7 @@ public class RMIExampleObject implements RMIServer {
 
 	@Override
 	public void send(String name, RMIInputStream ris) throws RemoteException {
+		logger.info("send: " + Thread.currentThread());
 		if (name.contains("\\") || name.contains("/") || name.contains("..")) {
 			throw new IllegalArgumentException("不正な名前です: " + name);
 		}
@@ -61,20 +65,25 @@ public class RMIExampleObject implements RMIServer {
 
 	@Override
 	public void recv(String name, RMIOutputStream ros) throws RemoteException {
+		logger.info("recv: " + Thread.currentThread());
 		if (name.contains("\\") || name.contains("/") || name.contains("..")) {
 			throw new IllegalArgumentException("不正な名前です: " + name);
 		}
 		try (OutputStream os = new RMIOutputStreamClientImpl(ros);
 			PrintWriter pw = new PrintWriter(os);) {
-			pw.println("データ送信テスト！");
+			for (int idx = 0; idx < 10; idx++) {
+				pw.println("データ送信テスト！ " + idx);
+				Thread.sleep(500);
+			}
 
-		} catch (IOException ex) {
+		} catch (IOException | InterruptedException ex) {
 			ex.printStackTrace();
 		}
 	}
 
 	@Override
 	public String shutdown() throws RemoteException {
+		logger.info("shutdown");
 		ServerMain inst = ServerMain.getInstance();
 		inst.stop();
 

@@ -228,17 +228,19 @@ public class ClientMain extends Application implements Initializable {
 	 */
 	@FXML
 	protected void handleRecvFile(ActionEvent event) {
-		ByteArrayOutputStream bos = new ByteArrayOutputStream();
-		try {
-			try (RMIOutputStream ros = new RMIOutputStreamImpl(bos)) {
-				RemoteAction.doRun(remote, remote -> remote.recv("recvFile", ros));
-			}
-			String msg = new String(bos.toByteArray());
-			System.out.println("recv: " + msg);
+		new Thread(()->{
+			ByteArrayOutputStream bos = new ByteArrayOutputStream();
+			try {
+				try (RMIOutputStream ros = new RMIOutputStreamImpl(bos)) {
+					RemoteAction.doRun(remote, remote -> remote.recv("recvFile", ros));
+				}
+				String msg = new String(bos.toByteArray());
+				System.out.println("recv: " + msg);
 
-		} catch (IOException ex) {
-			ErrorDialogUtils.showException(ex);
-		}
+			} catch (IOException ex) {
+				ErrorDialogUtils.showException(ex);
+			}
+		}).start();
 	}
 
 	/**
