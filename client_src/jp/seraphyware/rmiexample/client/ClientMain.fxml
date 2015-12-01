@@ -5,41 +5,61 @@
 <?import java.lang.*?>
 <?import javafx.scene.layout.*?>
 
-<AnchorPane maxHeight="-Infinity" maxWidth="-Infinity" minHeight="-Infinity" minWidth="-Infinity" prefHeight="114.0" prefWidth="480.0" xmlns="http://javafx.com/javafx/8" xmlns:fx="http://javafx.com/fxml/1">
-   <children>
-      <GridPane layoutX="14.0" layoutY="14.0" prefHeight="60.0" prefWidth="400.0" AnchorPane.leftAnchor="14.0" AnchorPane.rightAnchor="14.0" AnchorPane.topAnchor="14.0">
-        <columnConstraints>
-          <ColumnConstraints hgrow="SOMETIMES" maxWidth="1.7976931348623157E308" percentWidth="0.0" />
-          <ColumnConstraints hgrow="SOMETIMES" maxWidth="1.7976931348623157E308" />
-        </columnConstraints>
-        <rowConstraints>
-          <RowConstraints minHeight="10.0" prefHeight="30.0" vgrow="SOMETIMES" />
-          <RowConstraints minHeight="10.0" prefHeight="30.0" vgrow="SOMETIMES" />
-        </rowConstraints>
-         <children>
-            <Label alignment="CENTER_RIGHT" text="%servername">
-               <GridPane.margin>
-                  <Insets right="5.0" />
-               </GridPane.margin>
-            </Label>
-            <Label alignment="CENTER_RIGHT" text="%serverport" GridPane.rowIndex="1">
-               <GridPane.margin>
-                  <Insets right="5.0" />
-               </GridPane.margin>
-            </Label>
-            <TextField fx:id="txtURL" prefHeight="26.0" prefWidth="255.0" GridPane.columnIndex="1" />
-            <TextField fx:id="txtPort" alignment="CENTER_RIGHT" prefHeight="23.0" prefWidth="300.0" GridPane.columnIndex="1" GridPane.rowIndex="1" />
-         </children>
-      </GridPane>
-      <FlowPane alignment="BOTTOM_RIGHT" hgap="5.0" layoutX="9.0" layoutY="81.0" prefHeight="26.0" prefWidth="325.0" AnchorPane.bottomAnchor="5.0" AnchorPane.leftAnchor="5.0" AnchorPane.rightAnchor="5.0">
-         <children>
-            <Button fx:id="btnLookup" mnemonicParsing="false" onAction="#handleLookup" text="%lookup" />
-            <Button fx:id="btnSayHello" mnemonicParsing="false" onAction="#handleSayHello" text="%sayHello" />
-            <Button fx:id="btnSimpleCallback" mnemonicParsing="false" onAction="#handleDoCallback" text="%simpleCallback" />
-            <Button fx:id="btnSendFile" mnemonicParsing="false" onAction="#handleSendFile" text="%sendFile" />
-            <Button fx:id="btnRecvFile" mnemonicParsing="false" onAction="#handleRecvFile" text="%recvFile" />
-            <Button fx:id="btnShutdown" mnemonicParsing="false" onAction="#handleShutdown" text="%shutdown" />
-         </children>
-      </FlowPane>
-   </children>
+<AnchorPane maxHeight="-Infinity" maxWidth="-Infinity"
+	minHeight="-Infinity" minWidth="-Infinity" prefHeight="114.0"
+	prefWidth="480.0" xmlns="http://javafx.com/javafx/8" xmlns:fx="http://javafx.com/fxml/1">
+	<children>
+		<GridPane layoutX="14.0" layoutY="14.0" prefHeight="60.0"
+			prefWidth="400.0" AnchorPane.leftAnchor="14.0"
+			AnchorPane.rightAnchor="14.0" AnchorPane.topAnchor="14.0">
+			<columnConstraints>
+				<ColumnConstraints hgrow="SOMETIMES" maxWidth="1.7976931348623157E308"
+					percentWidth="0.0" />
+				<ColumnConstraints hgrow="SOMETIMES" maxWidth="1.7976931348623157E308" />
+			</columnConstraints>
+			<rowConstraints>
+				<RowConstraints minHeight="10.0" prefHeight="30.0"
+					vgrow="SOMETIMES" />
+				<RowConstraints minHeight="10.0" prefHeight="30.0"
+					vgrow="SOMETIMES" />
+			</rowConstraints>
+			<children>
+				<Label alignment="CENTER_RIGHT" text="%servername">
+					<GridPane.margin>
+						<Insets right="5.0" />
+					</GridPane.margin>
+				</Label>
+				<Label alignment="CENTER_RIGHT" text="%serverport"
+					GridPane.rowIndex="1">
+					<GridPane.margin>
+						<Insets right="5.0" />
+					</GridPane.margin>
+				</Label>
+				<TextField fx:id="txtURL" prefHeight="26.0" prefWidth="255.0"
+					GridPane.columnIndex="1" />
+				<TextField fx:id="txtPort" alignment="CENTER_RIGHT"
+					prefHeight="23.0" prefWidth="300.0" GridPane.columnIndex="1"
+					GridPane.rowIndex="1" />
+			</children>
+		</GridPane>
+		<FlowPane alignment="BOTTOM_RIGHT" hgap="5.0" layoutX="9.0"
+			layoutY="81.0" prefHeight="26.0" prefWidth="325.0"
+			AnchorPane.bottomAnchor="5.0" AnchorPane.leftAnchor="5.0"
+			AnchorPane.rightAnchor="5.0">
+			<children>
+				<Button fx:id="btnLookup" mnemonicParsing="false" onAction="#handleLookup"
+					text="%lookup" />
+				<Button fx:id="btnSayHello" mnemonicParsing="false" onAction="#handleSayHello"
+					text="%sayHello" />
+				<Button fx:id="btnSimpleCallback" mnemonicParsing="false"
+					onAction="#handleDoCallback" text="%simpleCallback" />
+				<Button fx:id="btnSendFile" mnemonicParsing="false" onAction="#handleSendFile"
+					text="%sendFile" />
+				<Button fx:id="btnRecvFile" mnemonicParsing="false" onAction="#handleRecvFile"
+					text="%recvFile" />
+				<Button fx:id="btnShutdown" mnemonicParsing="false" onAction="#handleShutdown"
+					text="%shutdown" />
+			</children>
+		</FlowPane>
+	</children>
 </AnchorPane>

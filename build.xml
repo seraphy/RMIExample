@@ -7,7 +7,11 @@
 		uri="javafx:com.sun.javafx.tools.ant"
 		classpath=".:${java.home}/../lib/ant-javafx.jar" />
 
-	<target name="default" description="全部ビルド"
+	<property name="serverApp.title" value="RMIExampleServer"/>
+	<property name="clientApp.title" value="RMIExampleClient"/>
+	<property name="clientApp.version" value="1.1"/>
+
+	<target name="default" description="Server/Clientの双方のビルド"
 		depends="makeServer, makeClient">
 	</target>
 
@@ -29,8 +33,8 @@
 			</classpath>
 		</javac>
 
-		<fx:jar destfile="RMIExampleServer.jar">
-			<fx:application name="RMIExample Server"
+		<fx:jar destfile="${serverApp.title}.jar">
+			<fx:application name="${serverapp.title}"
 				mainClass="jp.seraphyware.rmiexample.ServerMain"/>
 
 			<fileset dir="bin"/>
@@ -44,8 +48,7 @@
 		</fx:jar>
 	</target>
 
-	<target name="makeClient" description="クライアントのビルド"
-		depends="makeCommon">
+	<target name="makeClient" description="クライアントのビルド" depends="makeCommon">
 		<delete dir="client_bin"/>
 		<mkdir dir="client_bin"/>
 		<javac srcdir="client_src" destdir="client_bin"
@@ -55,8 +58,11 @@
 			</classpath>
 		</javac>
 
-		<fx:jar destfile="RMIExampleClient.jar">
-			<fx:application name="RMIExample Client"
+		<fx:jar destfile="${clientApp.title}.jar">
+			<fx:application
+				id="jp.seraphyware.rmiexampleclient"
+				name="${clientApp.title}"
+				version="${clientApp.version}"
 				mainClass="jp.seraphyware.rmiexample.client.ClientMain"/>
 
 			<fileset dir="bin"/>
@@ -68,6 +74,49 @@
 				<attribute name="Implementation-Version" value="1.0"/>
 			</manifest>
 		</fx:jar>
+	</target>
+
+	<target name="makeClientInstaller"
+		description="クライアントインストーラ(EXE)の作成" depends="makeClient">
+		<!-- nativebundlesはタイプとしてexeインストーラを指定。
+			※ "Inno Setup 5"以降がインストールされPATHが通っていること.
+		 -->
+		<fx:deploy
+			width="600"
+			height="400"
+			outdir="dist"
+			outfile="${clientApp.title}"
+			embedjnlp="false"
+			nativebundles="exe"
+			>
+			<fx:info
+				title="${clientApp.title}"
+				vendor="seraphyware.jp"
+				description="${clientApp.title} ver${clientApp.version}"
+				copyright="seraphyware.jp 2015"
+			/>
+			<fx:application refid="jp.seraphyware.rmiexampleclient" />
+			<fx:resources>
+				<fileset dir=".">
+					<include name="${clientApp.title}.jar"/>
+				</fileset>
+			</fx:resources>
+			<fx:platform javafx="8.0+" basedir="${java.home}">
+				<fx:jvmarg value="-Xmx128m" />
+				<fx:jvmarg value="-verbose:jni" />
+				<!-- うまく動作せず？
+				<fx:jvmuserarg name="-Xms" value="64m"/>
+				<fx:jvmuserarg name="-Xmx" value="128m"/>
+				-->
+			</fx:platform>
+			<!--
+				install="false"(デフォルト)の場合はユーザ固有のインストールとなる.
+				(%LOCALAPPDATA%下にインストールされる.)
+				trueにすると共通Program Files下にインストールされる.(要Admin権限)
+				shortcut="true"にすると、デスクトップにショートカットをつくる.
+			-->
+			<fx:preferences install="false" shortcut="true"/>
+		</fx:deploy>
 	</target>
 
 </project>

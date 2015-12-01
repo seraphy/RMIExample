@@ -1,5 +1,8 @@
 package jp.seraphyware.rmiexample;
 
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.UncheckedIOException;
 import java.rmi.AlreadyBoundException;
 import java.rmi.NoSuchObjectException;
 import java.rmi.NotBoundException;
@@ -8,6 +11,7 @@ import java.rmi.registry.LocateRegistry;
 import java.rmi.registry.Registry;
 import java.rmi.server.UnicastRemoteObject;
 import java.time.LocalDateTime;
+import java.util.logging.LogManager;
 
 /**
  * RMIサーバー
@@ -37,6 +41,12 @@ public final class ServerMain {
 	 */
 	private RMIExampleObject obj;
 
+	/**
+	 * プライベートコンストラクタ
+	 */
+	private ServerMain() {
+		super();
+	}
 
 	/**
 	 * オブジェクトを公開し、RMIレジストリも作成し公開する.
@@ -56,22 +66,6 @@ public final class ServerMain {
 		registry.bind("RMIExample", stub);
 
 		System.out.println("★start");
-
-		testLocal(port);
-	}
-
-	private void testLocal(int port) {
-		try {
-			Registry registry = LocateRegistry.getRegistry(port);
-			RMIServer example = (RMIServer) registry.lookup("RMIExample");
-			Message message = new Message();
-			message.setTime(LocalDateTime.now());
-			message.setMessage("★FROM LOCAL★");
-			example.sayHello(message);
-
-		} catch (RemoteException | NotBoundException ex) {
-			ex.printStackTrace();
-		}
 	}
 
 	/**
@@ -101,16 +95,54 @@ public final class ServerMain {
 		}
 	}
 
+
+	/**
+	 * ロガーの設定を行う.
+	 */
+	private static void initLogger() {
+		try (InputStream is = ServerMain.class
+				.getResourceAsStream("logging.properties")) {
+			LogManager logManager = LogManager.getLogManager();
+			logManager.readConfiguration(is);
+
+		} catch (IOException ex) {
+			throw new UncheckedIOException(ex);
+		}
+	}
+
+	/**
+	 * ローカル上の自分自身のRMIに接続するテスト.
+	 * @param port
+	 */
+	private static void testLocal(int port) {
+		try {
+			Registry registry = LocateRegistry.getRegistry(port);
+			RMIServer example = (RMIServer) registry.lookup("RMIExample");
+			Message message = new Message();
+			message.setTime(LocalDateTime.now());
+			message.setMessage("★FROM LOCAL★");
+			example.sayHello(message);
+
+		} catch (RemoteException | NotBoundException ex) {
+			ex.printStackTrace();
+		}
+	}
+
 	/**
 	 * エントリポイント
 	 * @param args
 	 * @throws Exception
 	 */
 	public static void main(String... args) throws Exception {
+		initLogger();
+
 		int port = Registry.REGISTRY_PORT;
 		if (args.length >= 1) {
 			port = Integer.parseInt(args[0]);
 		}
+
 		getInstance().start(port);
+
+		testLocal(port);
 	}
 }
