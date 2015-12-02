@@ -171,9 +171,7 @@ public class ServerMainController extends AbstractFXMLController
 		});
 		clientSocketFactory = new RMICustomClientSocketFactory();
 
-		UUID uuid = UUID.randomUUID();
-		clientSocketFactory.setUUID(uuid);
-		log.info("◆◆CLIENT SOCKET UUID=" + uuid);
+		onUpdateClientSocketFactoryUUID();
 
 		int port = Registry.REGISTRY_PORT;
 		txtRegisterPort.setText(Integer.toString(port));
@@ -181,6 +179,13 @@ public class ServerMainController extends AbstractFXMLController
 
 		btnRegister.setDisable(false);
 		btnUnregister.setDisable(true);
+	}
+
+	@FXML
+	protected void onUpdateClientSocketFactoryUUID() {
+		UUID uuid = UUID.randomUUID();
+		clientSocketFactory.setUUID(uuid);
+		log.info("◆◆CLIENT SOCKET UUID=" + uuid);
 	}
 
 	@FXML

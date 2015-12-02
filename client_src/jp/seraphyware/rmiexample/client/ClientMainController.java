@@ -63,28 +63,31 @@ public class ClientMainController extends AbstractFXMLController
 	private RMIServer remote;
 
 	@FXML
-	TextField txtURL;
+	private TextField txtURL;
 
 	@FXML
-	TextField txtPort;
+	private TextField txtPort;
 
 	@FXML
-	Button btnLookup;
+	private Button btnLookup;
 
 	@FXML
-	Button btnSayHello;
+	private Button btnSayHello;
 
 	@FXML
-	Button btnSimpleCallback;
+	private Button btnSimpleCallback;
 
 	@FXML
-	Button btnSendFile;
+	private Button btnSendFile;
 
 	@FXML
-	Button btnRecvFile;
+	private Button btnRecvFile;
 
 	@FXML
-	Button btnShutdown;
+	private Button btnDispose;
+
+	@FXML
+	private Button btnShutdown;
 
 	/**
 	 * FXMLが読み込まれコントローラとフィールドが結び付けられた後で、
@@ -106,6 +109,7 @@ public class ClientMainController extends AbstractFXMLController
 		btnSendFile.disableProperty().bind(lookuped.not());
 		btnRecvFile.disableProperty().bind(lookuped.not());
 		btnShutdown.disableProperty().bind(lookuped.not());
+		btnDispose.disableProperty().bind(lookuped.not());
 
 		// 初期値
 //		Preferences prefs = Preferences.userRoot()
@@ -125,7 +129,7 @@ public class ClientMainController extends AbstractFXMLController
 			Platform.runLater(() -> {
 				Alert alert = new Alert(AlertType.INFORMATION);
 				alert.setTitle("Create/Deserializaed ClientSocketFactory");
-				alert.setHeaderText("uuid=" + uuid);
+				alert.setHeaderText("obj=" + factory.toString() +"\r\nuuid=" + uuid);
 				alert.initModality(Modality.NONE);
 				alert.show();
 			});
@@ -288,6 +292,12 @@ public class ClientMainController extends AbstractFXMLController
 				ErrorDialogUtils.showException(getStage(), ex);
 			}
 		}).start();
+	}
+
+	@FXML
+	protected void handleDispose(ActionEvent event) {
+		remote = null;
+		lookuped.set(false);
 	}
 
 	/**

@@ -12,6 +12,7 @@
 <entry key="simpleCallback">Callback</entry>
 <entry key="sendFile">Send File</entry>
 <entry key="recvFile">Recv File</entry>
+<entry key="dispose">Dispose</entry>
 <entry key="shutdown">Shutdown</entry>
 
 </properties>

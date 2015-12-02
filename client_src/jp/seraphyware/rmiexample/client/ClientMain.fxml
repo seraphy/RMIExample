@@ -6,8 +6,8 @@
 <?import javafx.scene.layout.*?>
 
 <AnchorPane maxHeight="-Infinity" maxWidth="-Infinity"
-	minHeight="-Infinity" minWidth="-Infinity" prefHeight="114.0"
-	prefWidth="480.0" xmlns="http://javafx.com/javafx/8" xmlns:fx="http://javafx.com/fxml/1">
+	minHeight="-Infinity" minWidth="-Infinity" prefHeight="146.0"
+	prefWidth="431.0" xmlns="http://javafx.com/javafx/8" xmlns:fx="http://javafx.com/fxml/1">
 	<children>
 		<GridPane layoutX="14.0" layoutY="14.0" prefHeight="60.0"
 			prefWidth="400.0" AnchorPane.leftAnchor="14.0"
@@ -43,7 +43,7 @@
 			</children>
 		</GridPane>
 		<FlowPane alignment="BOTTOM_RIGHT" hgap="5.0" layoutX="9.0"
-			layoutY="81.0" prefHeight="26.0" prefWidth="325.0"
+			layoutY="81.0" prefHeight="26.0" prefWidth="325.0" vgap="5.0"
 			AnchorPane.bottomAnchor="5.0" AnchorPane.leftAnchor="5.0"
 			AnchorPane.rightAnchor="5.0">
 			<children>
@@ -57,6 +57,8 @@
 					text="%sendFile" />
 				<Button fx:id="btnRecvFile" mnemonicParsing="false" onAction="#handleRecvFile"
 					text="%recvFile" />
+				<Button fx:id="btnDispose" mnemonicParsing="false" onAction="#handleDispose"
+					text="%dispose" />
 				<Button fx:id="btnShutdown" mnemonicParsing="false" onAction="#handleShutdown"
 					text="%shutdown" />
 			</children>
