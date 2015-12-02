@@ -1,0 +1,89 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.geometry.*?>
+<?import javafx.scene.control.*?>
+<?import java.lang.*?>
+<?import javafx.scene.layout.*?>
+
+<VBox maxHeight="1.7976931348623157E308" maxWidth="1.7976931348623157E308"
+	minHeight="-Infinity" minWidth="-Infinity" spacing="5.0"
+	xmlns="http://javafx.com/javafx/8" xmlns:fx="http://javafx.com/fxml/1">
+	<children>
+		<TitledPane collapsible="false" text="Control" VBox.vgrow="NEVER">
+			<content>
+				<GridPane hgap="5.0" vgap="5.0">
+					<columnConstraints>
+						<ColumnConstraints hgrow="SOMETIMES"
+							percentWidth="0.0" />
+						<ColumnConstraints hgrow="SOMETIMES"
+							maxWidth="1.7976931348623157E308" />
+					</columnConstraints>
+					<rowConstraints>
+						<RowConstraints vgrow="SOMETIMES" />
+						<RowConstraints vgrow="SOMETIMES" />
+						<RowConstraints vgrow="SOMETIMES" />
+					</rowConstraints>
+					<children>
+						<Label alignment="CENTER_RIGHT" maxHeight="1.7976931348623157E308"
+							maxWidth="1.7976931348623157E308" text="Registry Port:" />
+						<Label alignment="CENTER_RIGHT" maxHeight="1.7976931348623157E308"
+							maxWidth="1.7976931348623157E308" text="Export port:"
+							GridPane.rowIndex="1" />
+						<TextField fx:id="txtRegisterPort" maxHeight="1.7976931348623157E308"
+							maxWidth="200.0" GridPane.columnIndex="1" />
+						<HBox alignment="CENTER_LEFT" maxHeight="1.7976931348623157E308"
+							maxWidth="1.7976931348623157E308" spacing="5.0"
+							GridPane.columnIndex="1" GridPane.rowIndex="2">
+							<children>
+								<Button fx:id="btnRegister" mnemonicParsing="false"
+									onAction="#onRegister" text="Register" />
+								<Button fx:id="btnUnregister" mnemonicParsing="false"
+									onAction="#onUnregister" text="Unregister" />
+								<Label fx:id="lblStatus" text="*" />
+							</children>
+						</HBox>
+						<TextField fx:id="txtExportPort" maxWidth="200.0"
+							GridPane.columnIndex="1" GridPane.rowIndex="1" />
+					</children>
+					<padding>
+						<Insets bottom="5.0" left="5.0" right="5.0" top="5.0" />
+					</padding>
+				</GridPane>
+			</content>
+		</TitledPane>
+		<TitledPane collapsible="false" text="Test" VBox.vgrow="NEVER">
+			<content>
+				<HBox alignment="CENTER_RIGHT" spacing="5.0">
+					<children>
+						<Button mnemonicParsing="false" onAction="#onSelfTest"
+							text="Self Test" />
+					</children>
+					<padding>
+						<Insets bottom="5.0" left="5.0" right="5.0" top="5.0" />
+					</padding>
+				</HBox>
+			</content>
+		</TitledPane>
+		<TitledPane collapsible="false" maxHeight="1.7976931348623157E308"
+			maxWidth="1.7976931348623157E308" prefHeight="200.0" prefWidth="200.0"
+			text="Logs" VBox.vgrow="ALWAYS">
+			<content>
+				<TextArea fx:id="txtLogs" maxHeight="1.7976931348623157E308"
+					maxWidth="1.7976931348623157E308" />
+			</content>
+		</TitledPane>
+		<HBox alignment="CENTER_RIGHT" maxHeight="1.7976931348623157E308"
+			maxWidth="1.7976931348623157E308" spacing="5.0" VBox.vgrow="NEVER">
+			<children>
+				<Button cancelButton="true" mnemonicParsing="false" onAction="#onExit"
+					fx:id="btnExit" text="Exit" />
+			</children>
+			<padding>
+				<Insets right="20.0" top="5.0" />
+			</padding>
+		</HBox>
+	</children>
+	<padding>
+		<Insets bottom="10.0" left="10.0" right="10.0" top="10.0" />
+	</padding>
+</VBox>

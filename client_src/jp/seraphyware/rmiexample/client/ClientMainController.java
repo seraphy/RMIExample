@@ -12,22 +12,25 @@ import java.rmi.server.UnicastRemoteObject;
 import java.rmi.server.Unreferenced;
 import java.time.LocalDateTime;
 import java.util.ResourceBundle;
+import java.util.UUID;
 
+import javafx.application.Platform;
 import javafx.beans.property.SimpleBooleanProperty;
 import javafx.event.ActionEvent;
 import javafx.fxml.FXML;
 import javafx.fxml.FXMLLoader;
 import javafx.fxml.Initializable;
 import javafx.scene.Parent;
-import javafx.scene.Scene;
+import javafx.scene.control.Alert;
+import javafx.scene.control.Alert.AlertType;
 import javafx.scene.control.Button;
 import javafx.scene.control.TextField;
 import javafx.stage.Modality;
 import javafx.stage.Stage;
-import javafx.stage.StageStyle;
-import javafx.stage.Window;
+import jp.seraphyware.rmiexample.AbstractFXMLController;
 import jp.seraphyware.rmiexample.ErrorDialogUtils;
 import jp.seraphyware.rmiexample.Message;
+import jp.seraphyware.rmiexample.RMICustomClientSocketFactory;
 import jp.seraphyware.rmiexample.RMIExampleCallback;
 import jp.seraphyware.rmiexample.RMIInputStream;
 import jp.seraphyware.rmiexample.RMIInputStreamImpl;
@@ -40,7 +43,8 @@ import jp.seraphyware.rmiexample.XMLResourceBundleControl;
 /**
  * RMIクライアント(GUI)
  */
-public class ClientMainController implements Initializable {
+public class ClientMainController extends AbstractFXMLController
+		implements Initializable {
 
 	/**
 	 * Lookupされているか示す
@@ -115,87 +119,27 @@ public class ClientMainController implements Initializable {
 
 		txtPort.setText(Integer.toString(Registry.REGISTRY_PORT));
 		txtURL.setText("localhost");
-	}
 
-	private Window parent;
-
-	private Stage stage;
-
-	private Parent root;
-
-	private Scene scene;
-
-	public Window getParent() {
-		return parent;
-	}
-
-	public void setParent(Window parent) {
-		this.parent = parent;
-	}
-
-	public Stage getStage() {
-		initStage();
-		assert stage != null;
-		return stage;
-	}
-
-	public void setStage(Stage stage) {
-		this.stage = stage;
-	}
-
-	protected void initStage() {
-		if (stage == null) {
-			setStage(makeStage());
-		}
+		RMICustomClientSocketFactory.setClientFactoryHandler(factory -> {
+			UUID uuid = factory.getUUID();
+			Platform.runLater(() -> {
+				Alert alert = new Alert(AlertType.INFORMATION);
+				alert.setTitle("Create/Deserializaed ClientSocketFactory");
+				alert.setHeaderText("uuid=" + uuid);
+				alert.initModality(Modality.NONE);
+				alert.show();
+			});
+		});
 	}
 
 	protected Stage makeStage() {
-		Stage stage = new Stage(StageStyle.DECORATED);
-		stage.initOwner(parent);
-		stage.initModality(Modality.NONE);
-
-		// シーングラフの設定
-		stage.setScene(getScene());
-
-		// タイトル
+		Stage stage = super.makeStage();
 		stage.setTitle(resource.getString("title"));
-
 		return stage;
 	}
 
-	public Scene getScene() {
-		initScene();
-		assert scene != null;
-		return scene;
-	}
-
-	public void setScene(Scene scene) {
-		this.scene = scene;
-	}
-
-	protected void initScene() {
-		if (scene == null) {
-			setScene(new Scene(getRoot()));
-		}
-	}
-
-	public Parent getRoot() {
-		initRoot();
-		assert root != null;
-		return root;
-	}
-
-	public void setRoot(Parent root) {
-		this.root = root;
-	}
-
-	protected void initRoot() {
-		if (root == null) {
-			setRoot(makeRoot());
-		}
-	}
-
-	private Parent makeRoot() {
+	@Override
+	protected Parent makeRoot() {
 		// FXMLファイルとリソースバンドルより画面を構成する
 		FXMLLoader loader = new FXMLLoader();
 		loader.setLocation(getClass().getResource("ClientMain.fxml"));
@@ -230,7 +174,7 @@ public class ClientMainController implements Initializable {
 
 		} catch (Exception ex) {
 			lookuped.set(false);
-			ErrorDialogUtils.showException(ex);
+			ErrorDialogUtils.showException(getStage(), ex);
 		}
 	}
 
@@ -243,7 +187,8 @@ public class ClientMainController implements Initializable {
 		Message message = new Message();
 		message.setTime(LocalDateTime.now());
 		message.setMessage("FROM-CLIENT!");
-		RemoteAction.doRun(remote, remote -> remote.sayHello(message));
+		RemoteAction.doRun(remote, remote -> remote.sayHello(message),
+				getStage());
 	}
 
 
@@ -293,14 +238,16 @@ public class ClientMainController implements Initializable {
 			};
 
 			// コールバック
-			RemoteAction.doRun(remote, remote -> remote.doCallback("Client", callback));
+			RemoteAction.doRun(remote,
+					remote -> remote.doCallback("Client", callback),
+					getStage());
 
 			// クライアント側が保持しないことが明らかであれば、
 			// コールバック終了後にエクスポートを解除してもよい
 			//UnicastRemoteObject.unexportObject(callback, false);
 
 		} catch (RemoteException ex) {
-			ErrorDialogUtils.showException(ex);
+			ErrorDialogUtils.showException(getStage(), ex);
 		}
 	}
 
@@ -313,10 +260,11 @@ public class ClientMainController implements Initializable {
 		ByteArrayInputStream bis = new ByteArrayInputStream("hello, world".getBytes());
 		try {
 			RMIInputStream ris = new RMIInputStreamImpl(bis);
-			RemoteAction.doRun(remote, remote -> remote.send("sendFile",ris));
+			RemoteAction.doRun(remote, remote -> remote.send("sendFile", ris),
+					getStage());
 
 		} catch (IOException ex) {
-			ErrorDialogUtils.showException(ex);
+			ErrorDialogUtils.showException(getStage(), ex);
 		}
 	}
 
@@ -330,13 +278,14 @@ public class ClientMainController implements Initializable {
 			ByteArrayOutputStream bos = new ByteArrayOutputStream();
 			try {
 				try (RMIOutputStream ros = new RMIOutputStreamImpl(bos)) {
-					RemoteAction.doRun(remote, remote -> remote.recv("recvFile", ros));
+					RemoteAction.doRun(remote,
+							remote -> remote.recv("recvFile", ros), getStage());
 				}
 				String msg = new String(bos.toByteArray());
 				System.out.println("recv: " + msg);
 
 			} catch (IOException ex) {
-				ErrorDialogUtils.showException(ex);
+				ErrorDialogUtils.showException(getStage(), ex);
 			}
 		}).start();
 	}
@@ -347,7 +296,8 @@ public class ClientMainController implements Initializable {
 	 */
 	@FXML
 	protected void handleShutdown(ActionEvent event) {
-		RemoteAction.doRun(remote, remote -> System.out.println(remote.shutdown()));
+		RemoteAction.doRun(remote,
+				remote -> System.out.println(remote.shutdown()), getStage());
 
 		// 正常終了した場合はサーバ側が停止している
 		lookuped.set(false);

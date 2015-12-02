@@ -2,6 +2,7 @@ package jp.seraphyware.rmiexample.client;
 
 import java.rmi.RemoteException;
 
+import javafx.stage.Window;
 import jp.seraphyware.rmiexample.ErrorDialogUtils;
 
 /**
@@ -22,8 +23,9 @@ public interface RemoteAction<T> {
 	 * リモート呼び出しを行う.<br>
 	 * リモート例外が発生した場合はエラーダイアログを表示する.
 	 * @param remote リモート
+	 * @param owner エラーダイアログを表示する場合のオーナー(null可)
 	 */
-	default void action(T remote) {
+	default void action(T remote, Window owner) {
 		try {
 			if (remote == null) {
 				throw new IllegalStateException();
@@ -32,7 +34,7 @@ public interface RemoteAction<T> {
 			run(remote);
 
 		} catch (Exception ex) {
-			ErrorDialogUtils.showException(ex);
+			ErrorDialogUtils.showException(owner, ex);
 		}
 	}
 
@@ -41,8 +43,9 @@ public interface RemoteAction<T> {
 	 * リモート例外が発生した場合はエラーダイアログを表示する.
 	 * @param remote リモート
 	 * @param action 実行するアクション
+	 * @param ownerエラーダイアログを表示するオーナー(null可)
 	 */
-	static <T> void doRun(T remote, RemoteAction<T> action) {
-		action.action(remote);
+	static <T> void doRun(T remote, RemoteAction<T> action, Window owner) {
+		action.action(remote, owner);
 	}
 }

@@ -9,6 +9,7 @@ import javafx.scene.control.Label;
 import javafx.scene.control.TextArea;
 import javafx.scene.layout.GridPane;
 import javafx.scene.layout.Priority;
+import javafx.stage.Window;
 
 public final class ErrorDialogUtils {
 
@@ -16,7 +17,7 @@ public final class ErrorDialogUtils {
 		super();
 	}
 
-	public static void showException(Throwable ex) {
+	public static void showException(Window owner, Throwable ex) {
 		if (ex == null) {
 			return;
 		}
@@ -26,6 +27,9 @@ public final class ErrorDialogUtils {
 		// http://code.makery.ch/blog/javafx-dialogs-official/
 
 		Alert alert = new Alert(AlertType.ERROR);
+		if (owner != null) {
+			alert.initOwner(owner);
+		}
 		alert.setTitle("Exception Dialog");
 		alert.setHeaderText(ex.getClass().getName());
 		alert.setContentText(ex.getMessage());

@@ -30,7 +30,7 @@ public class RMIExampleObject implements RMIServer {
 		}
 
 		// Hello Worldを表示する.
-		logger.info("Hello World!! (" + clientHost + ") " + message);
+		showMessage("Hello World!! (" + clientHost + ") " + message);
 	}
 
 	@Override
@@ -52,13 +52,13 @@ public class RMIExampleObject implements RMIServer {
 			try (InputStream is = new RMIInputStreamClientImpl(ris)) {
 				int ch;
 				while ((ch = is.read()) > 0) {
-					System.out.println(ch);
+					showMessage("" + (char) ch);
 					Thread.sleep(1000);
 				}
 				is.close();
 
 			} catch (IOException | InterruptedException ex) {
-				ex.printStackTrace();
+				showError(ex);
 			}
 		}).start();
 	}
@@ -72,32 +72,26 @@ public class RMIExampleObject implements RMIServer {
 		try (OutputStream os = new RMIOutputStreamClientImpl(ros);
 			PrintWriter pw = new PrintWriter(os);) {
 			for (int idx = 0; idx < 10; idx++) {
-				pw.println("データ送信テスト！ " + idx);
+				showMessage("データ送信テスト！ " + idx);
 				Thread.sleep(500);
 			}
 
 		} catch (IOException | InterruptedException ex) {
-			ex.printStackTrace();
+			showError(ex);
 		}
 	}
 
 	@Override
 	public String shutdown() throws RemoteException {
 		logger.info("shutdown");
-		ServerMain inst = ServerMain.getInstance();
-		inst.stop();
-
-		// ※ 公開停止後、Sleepとガベージコレクトしても接続は即時には切れないようだ
-		// ※ コールバック用に受け取ったリモートオブジェクトも解放させる.
-		try {
-			for (int idx = 0; idx < 3; idx++) {
-				System.gc();
-				Thread.sleep(300);
-			}
-		} catch (Exception ex) {
-			ex.printStackTrace();
-		}
-
 		return "Stopped!";
+	}
+
+	protected void showError(Throwable ex) {
+		ex.printStackTrace();
+	}
+
+	protected void showMessage(String message) {
+		System.out.println(message);
 	}
 }
