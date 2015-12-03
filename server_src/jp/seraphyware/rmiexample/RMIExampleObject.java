@@ -35,10 +35,19 @@ public class RMIExampleObject implements RMIServer {
 
 	@Override
 	public void doCallback(String msg, RMIExampleCallback callback) throws RemoteException {
-		Message message = new Message();
-		message.setTime(LocalDateTime.now());
-		message.setMessage(msg + "★ FROM SERVER!");
-		callback.callback(message);
+		for (int idx = 0; idx < 3; idx++) {
+			try {
+				Thread.sleep(300);
+
+			} catch (InterruptedException ex) {
+				throw new RuntimeException(ex);
+			}
+
+			Message message = new Message();
+			message.setTime(LocalDateTime.now());
+			message.setMessage(msg + "★ FROM SERVER!");
+			callback.callback(message);
+		}
 	}
 
 	@Override
@@ -48,14 +57,13 @@ public class RMIExampleObject implements RMIServer {
 			throw new IllegalArgumentException("不正な名前です: " + name);
 		}
 		new Thread(() -> {
-			System.out.println("name=" + name);
+			showMessage("name=" + name);
 			try (InputStream is = new RMIInputStreamClientImpl(ris)) {
 				int ch;
 				while ((ch = is.read()) > 0) {
 					showMessage("" + (char) ch);
-					Thread.sleep(1000);
+					Thread.sleep(500);
 				}
-				is.close();
 
 			} catch (IOException | InterruptedException ex) {
 				showError(ex);
@@ -72,7 +80,9 @@ public class RMIExampleObject implements RMIServer {
 		try (OutputStream os = new RMIOutputStreamClientImpl(ros);
 			PrintWriter pw = new PrintWriter(os);) {
 			for (int idx = 0; idx < 10; idx++) {
-				showMessage("データ送信テスト！ " + idx);
+				String msg = "データ送信テスト！ " + idx;
+				showMessage(msg);
+				ros.write((msg +  "\r\n").getBytes());
 				Thread.sleep(500);
 			}
 

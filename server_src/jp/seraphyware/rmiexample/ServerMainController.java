@@ -9,7 +9,6 @@ import java.rmi.registry.LocateRegistry;
 import java.rmi.registry.Registry;
 import java.rmi.server.UnicastRemoteObject;
 import java.time.LocalDateTime;
-import java.util.HashSet;
 import java.util.ResourceBundle;
 import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
@@ -81,12 +80,17 @@ public class ServerMainController extends AbstractFXMLController
 	/**
 	 * サーバソケットファクトリ
 	 */
-	private RMICustomServerSocketFactory serverSocketFactory;
+	private final RMICustomServerSocketFactory serverSocketFactory = new RMICustomServerSocketFactory();
 
 	/**
 	 * ソケットファクトリ
 	 */
-	private RMICustomClientSocketFactory clientSocketFactory;
+	private final RMICustomClientSocketFactory clientSocketFactory = new RMICustomClientSocketFactory();
+
+	/**
+	 * ソケット数監視
+	 */
+	private final RMICustomSocketWatcher socketWatcher = new RMICustomSocketWatcher();
 
 	@Override
 	protected Stage makeStage() {
@@ -143,33 +147,15 @@ public class ServerMainController extends AbstractFXMLController
 
 		lblStatus.textProperty().bind(strNumOfSocketCounts);
 
-		serverSocketFactory = new RMICustomServerSocketFactory();
-		serverSocketFactory.setUpdateSocketCount((count) -> {
+		socketWatcher.setNumOfSocketsListener((server, client) -> {
 			Platform.runLater(() -> {
-				numOfServerSocket.set(count);
+				numOfServerSocket.set(server);
+				numOfClientSocket.set(client);
 			});
 		});
 
-		HashSet<RMICustomClientSocketFactory> factories = new HashSet<>();
-
-		RMICustomClientSocketFactory.setClientFactoryHandler(factory -> {
-			UUID uuid = factory.getUUID();
-			Platform.runLater(() -> {
-				int en = txtLogs.getLength();
-				txtLogs.insertText(en,
-						"ClientFactory Created: " + factory + ":UUID="
-								+ uuid + "\r\n");
-			});
-
-			if (factories.add(factory)) {
-				factory.setUpdateSocketCount((count) -> {
-					Platform.runLater(() -> {
-						numOfClientSocket.set(count);
-					});
-				});
-			}
-		});
-		clientSocketFactory = new RMICustomClientSocketFactory();
+		RMICustomServerSocketFactory.setServerSocketListener(socketWatcher);
+		RMICustomClientSocketFactory.setClientSocketListener(socketWatcher);
 
 		onUpdateClientSocketFactoryUUID();
 
@@ -275,6 +261,20 @@ public class ServerMainController extends AbstractFXMLController
 	}
 
 	@FXML
+	protected void onGarbageCollect() {
+		for (int idx = 0; idx < 3; idx++) {
+			System.gc();
+
+			try {
+				Thread.sleep(100);
+
+			} catch (InterruptedException ex) {
+				throw new RuntimeException(ex);
+			}
+		}
+	}
+
+	@FXML
 	protected void onUnregister() {
 		if (registry == null) {
 			return;
@@ -319,7 +319,7 @@ public class ServerMainController extends AbstractFXMLController
 
 	@FXML
 	protected void onExit() {
-		if (serverSocketFactory.getNumOfSockets() > 0) {
+		if (socketWatcher.getNumOfServerSockets() > 0) {
 			Alert alert = new Alert(AlertType.WARNING);
 			alert.setHeaderText("Still connected.");
 			alert.showAndWait();

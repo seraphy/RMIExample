@@ -3,6 +3,8 @@ package jp.seraphyware.rmiexample;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.rmi.RemoteException;
+import java.rmi.server.RMIClientSocketFactory;
+import java.rmi.server.RMIServerSocketFactory;
 import java.rmi.server.UnicastRemoteObject;
 import java.rmi.server.Unreferenced;
 import java.util.Objects;
@@ -12,11 +14,16 @@ import java.util.logging.Logger;
 public class RMIOutputStreamImpl extends UnicastRemoteObject implements
 		RMIOutputStream, Unreferenced {
 
+	private static final long serialVersionUID = 7292534938651082251L;
+
 	private final Logger logger = Logger.getLogger(getClass().getName());
 
 	private OutputStream src;
 
-	public RMIOutputStreamImpl(OutputStream src) throws RemoteException {
+	public RMIOutputStreamImpl(OutputStream src, int port,
+			RMIClientSocketFactory csf, RMIServerSocketFactory ssf)
+					throws RemoteException {
+		super(port, csf, ssf);
 		Objects.requireNonNull(src);
 		this.src = src;
 		logger.info(() -> "exportObject: " + this);
@@ -47,7 +54,8 @@ public class RMIOutputStreamImpl extends UnicastRemoteObject implements
 
 	@Override
 	public String toString() {
-		return getClass().getSimpleName() + "@" + System.identityHashCode(this)
+		return getClass().getSimpleName() + "@"
+				+ Integer.toHexString(System.identityHashCode(this))
 				+ ":source=" + src;
 	}
 }

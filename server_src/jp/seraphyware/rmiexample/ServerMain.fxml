@@ -55,8 +55,10 @@
 			<content>
 				<HBox alignment="CENTER_RIGHT" spacing="5.0">
 					<children>
+						<Button mnemonicParsing="false" onAction="#onGarbageCollect"
+							text="Garbage collect"/>
 						<Button mnemonicParsing="false" onAction="#onUpdateClientSocketFactoryUUID"
-							text="Change ClientSocketFactory UUID" />
+							text="Change UUID" />
 						<Button mnemonicParsing="false" onAction="#onSelfTest"
 							text="Self Test" />
 					</children>

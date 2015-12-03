@@ -27,6 +27,9 @@
 		<delete dir="server_bin"/>
 		<mkdir dir="server_bin"/>
 		<javac srcdir="server_src" destdir="server_bin"
+			debug="true"
+			target="1.8"
+			source="1.8"
 			includeantruntime="false">
 			<classpath>
 				<pathelement path="bin"/>
@@ -52,6 +55,9 @@
 		<delete dir="client_bin"/>
 		<mkdir dir="client_bin"/>
 		<javac srcdir="client_src" destdir="client_bin"
+			debug="true"
+			target="1.8"
+			source="1.8"
 			includeantruntime="false">
 			<classpath>
 				<pathelement path="bin"/>

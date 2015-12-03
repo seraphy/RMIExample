@@ -1,7 +1,10 @@
 package jp.seraphyware.rmiexample.client;
 
 import java.rmi.RemoteException;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ForkJoinPool;
 
+import javafx.application.Platform;
 import javafx.stage.Window;
 import jp.seraphyware.rmiexample.ErrorDialogUtils;
 
@@ -25,17 +28,28 @@ public interface RemoteAction<T> {
 	 * @param remote リモート
 	 * @param owner エラーダイアログを表示する場合のオーナー(null可)
 	 */
-	default void action(T remote, Window owner) {
-		try {
-			if (remote == null) {
-				throw new IllegalStateException();
-			}
-
-			run(remote);
-
-		} catch (Exception ex) {
-			ErrorDialogUtils.showException(owner, ex);
+	default CompletableFuture<Void> action(T remote, Window owner) {
+		if (remote == null) {
+			throw new IllegalStateException();
 		}
+		CompletableFuture<Void> future = new CompletableFuture<>();
+		ForkJoinPool.commonPool().execute(() -> {
+			try {
+				run(remote);
+				future.complete(null);
+
+			} catch (Throwable ex) {
+				future.completeExceptionally(ex);
+			}
+		});
+		future.whenComplete((value, ex) -> {
+			if (ex != null) {
+				Platform.runLater(() -> {
+					ErrorDialogUtils.showException(owner, ex);
+				});
+			}
+		});
+		return future;
 	}
 
 	/**
@@ -45,7 +59,7 @@ public interface RemoteAction<T> {
 	 * @param action 実行するアクション
 	 * @param ownerエラーダイアログを表示するオーナー(null可)
 	 */
-	static <T> void doRun(T remote, RemoteAction<T> action, Window owner) {
-		action.action(remote, owner);
+	static <T> CompletableFuture<Void> doRun(T remote, RemoteAction<T> action, Window owner) {
+		return action.action(remote, owner);
 	}
 }
