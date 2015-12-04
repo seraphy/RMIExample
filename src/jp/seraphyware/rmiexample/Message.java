@@ -5,23 +5,11 @@ import java.time.LocalDateTime;
 
 public class Message implements Serializable {
 
-	private static final long serialVersionUID = 1234L;
+	private static final long serialVersionUID = -4450957666222313052L;
 
 	private String message;
 
 	private LocalDateTime time;
-
-//	private void writeObject(ObjectOutputStream outstm) throws IOException {
-//		// シリアライズが行われていることを示す
-//		System.out.println("★★writeObject★★");
-//		outstm.defaultWriteObject();
-//	}
-//
-//	private void readObject(ObjectInputStream inpstm) throws IOException, ClassNotFoundException {
-//		inpstm.defaultReadObject();
-//		// デシリアライズが行われていることを示す
-//		System.out.println("★★readObject★★");
-//	}
 
 	public void setTime(LocalDateTime time) {
 		this.time = time;

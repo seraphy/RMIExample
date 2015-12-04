@@ -1,22 +1,13 @@
 package jp.seraphyware.rmiexample.client;
 
-import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.net.URL;
-import java.rmi.RemoteException;
-import java.rmi.registry.LocateRegistry;
 import java.rmi.registry.Registry;
-import java.rmi.server.RMIClientSocketFactory;
-import java.rmi.server.RMIServerSocketFactory;
-import java.rmi.server.UnicastRemoteObject;
-import java.rmi.server.Unreferenced;
 import java.time.LocalDateTime;
-import java.util.Arrays;
 import java.util.ResourceBundle;
 import java.util.concurrent.CompletableFuture;
-import java.util.stream.Collectors;
 
 import javafx.application.Platform;
 import javafx.beans.binding.StringBinding;
@@ -27,25 +18,18 @@ import javafx.fxml.FXML;
 import javafx.fxml.FXMLLoader;
 import javafx.fxml.Initializable;
 import javafx.scene.Parent;
-import javafx.scene.control.Alert;
-import javafx.scene.control.Alert.AlertType;
 import javafx.scene.control.Button;
 import javafx.scene.control.Label;
 import javafx.scene.control.TextField;
-import javafx.stage.Modality;
 import javafx.stage.Stage;
 import jp.seraphyware.rmiexample.AbstractFXMLController;
+import jp.seraphyware.rmiexample.Downloader;
 import jp.seraphyware.rmiexample.ErrorDialogUtils;
 import jp.seraphyware.rmiexample.Message;
-import jp.seraphyware.rmiexample.RMICustomClientSocketFactory;
-import jp.seraphyware.rmiexample.RMICustomServerSocketFactory;
+import jp.seraphyware.rmiexample.MyServerObject;
 import jp.seraphyware.rmiexample.RMICustomSocketWatcher;
-import jp.seraphyware.rmiexample.RMIExampleCallback;
-import jp.seraphyware.rmiexample.RMIInputStream;
-import jp.seraphyware.rmiexample.RMIInputStreamImpl;
-import jp.seraphyware.rmiexample.RMIOutputStream;
-import jp.seraphyware.rmiexample.RMIOutputStreamImpl;
-import jp.seraphyware.rmiexample.RMIServer;
+import jp.seraphyware.rmiexample.RemoteObjectHelper;
+import jp.seraphyware.rmiexample.Uploader;
 import jp.seraphyware.rmiexample.XMLResourceBundleControl;
 
 
@@ -63,13 +47,12 @@ public class ClientMainController extends AbstractFXMLController
 	/**
 	 * リソースバンドル
 	 */
-	private ResourceBundle resource = ResourceBundle.getBundle(
-			getClass().getName(), new XMLResourceBundleControl());
+	private ResourceBundle resource;
 
 	/**
 	 * リモートスタブ
 	 */
-	private RMIServer remote;
+	private MyServerObject remote;
 
 	@FXML
 	private Label txtStatus;
@@ -87,9 +70,6 @@ public class ClientMainController extends AbstractFXMLController
 	private Button btnSayHello;
 
 	@FXML
-	private Button btnSimpleCallback;
-
-	@FXML
 	private Button btnSendFile;
 
 	@FXML
@@ -100,21 +80,6 @@ public class ClientMainController extends AbstractFXMLController
 
 	@FXML
 	private Button btnShutdown;
-
-	/**
-	 * サーバソケットファクトリ
-	 */
-	private final RMICustomServerSocketFactory serverSocketFactory = new RMICustomServerSocketFactory();
-
-	/**
-	 * ソケットファクトリ
-	 */
-	private final RMICustomClientSocketFactory clientSocketFactory = new RMICustomClientSocketFactory();
-
-	/**
-	 * ソケット数監視
-	 */
-	private final RMICustomSocketWatcher socketWatcher = new RMICustomSocketWatcher();
 
 	/**
 	 * FXMLが読み込まれコントローラとフィールドが結び付けられた後で、
@@ -140,15 +105,15 @@ public class ClientMainController extends AbstractFXMLController
 
 		txtStatus.textProperty().bind(strNumOfSocketCounts);
 
+		RemoteObjectHelper helper = RemoteObjectHelper.getInstance();
+		RMICustomSocketWatcher socketWatcher = helper.getSocketWatcher();
+
 		socketWatcher.setNumOfSocketsListener((server, client) -> {
 			Platform.runLater(() -> {
 				numOfServerSocket.set(server);
 				numOfClientSocket.set(client);
 			});
 		});
-
-		RMICustomServerSocketFactory.setServerSocketListener(socketWatcher);
-		RMICustomClientSocketFactory.setClientSocketListener(socketWatcher);
 
 		// テキストフィールドの制御
 		txtPort.textProperty().addListener((ob, oldValue, newValue)->{
@@ -160,7 +125,6 @@ public class ClientMainController extends AbstractFXMLController
 		// ボタンの制御
 		btnLookup.disableProperty().bind(lookuped);
 		btnSayHello.disableProperty().bind(lookuped.not());
-		btnSimpleCallback.disableProperty().bind(lookuped.not());
 		btnSendFile.disableProperty().bind(lookuped.not());
 		btnRecvFile.disableProperty().bind(lookuped.not());
 		btnShutdown.disableProperty().bind(lookuped.not());
@@ -190,6 +154,10 @@ public class ClientMainController extends AbstractFXMLController
 
 	@Override
 	protected Parent makeRoot() {
+		// リソース
+		resource = ResourceBundle.getBundle(
+				ClientMainController.class.getName(), new XMLResourceBundleControl());
+
 		// FXMLファイルとリソースバンドルより画面を構成する
 		FXMLLoader loader = new FXMLLoader();
 		loader.setLocation(getClass().getResource("ClientMain.fxml"));
@@ -218,9 +186,16 @@ public class ClientMainController extends AbstractFXMLController
 		try {
 			String url = txtURL.getText();
 			int port = Integer.parseInt(txtPort.getText());
-			Registry registry = LocateRegistry.getRegistry(url, port,
-					clientSocketFactory);
-			this.remote = (RMIServer) registry.lookup("RMIExample");
+
+			RemoteObjectHelper helper = RemoteObjectHelper.getInstance();
+
+			// RMIレジストリを取得する.
+			Registry registry = helper.getRegistry(url, port);
+
+			// サーバオブジェクトを取得する.
+			this.remote = (MyServerObject) registry
+					.lookup(MyServerObject.class.getName());
+
 			lookuped.set(true);
 
 		} catch (Exception ex) {
@@ -238,90 +213,8 @@ public class ClientMainController extends AbstractFXMLController
 		Message message = new Message();
 		message.setTime(LocalDateTime.now());
 		message.setMessage("FROM-CLIENT!");
-		RemoteAction.doRun(remote, remote -> remote.sayHello(message),
+		RemoteAction.doRun(remote, remote -> remote.echo(message),
 				getStage());
-	}
-
-
-	/**
-	 * コールバック用クラス.
-	 * クライアント側から参照が切れた場合に通知を受ける.
-	 */
-	public static abstract class RMIExampleCallbackImpl extends UnicastRemoteObject
-		implements RMIExampleCallback, Unreferenced {
-		private static final long serialVersionUID = 7419957109601519663L;
-
-		public RMIExampleCallbackImpl(int port,
-				RMIClientSocketFactory clientSocketFactory,
-				RMIServerSocketFactory serverSocketFactory)
-						throws RemoteException {
-			super(0, clientSocketFactory, serverSocketFactory);
-		}
-
-		@Override
-		public void unreferenced() {
-			System.out.println("★★★unreferenced: " + this);
-			try {
-				// クライアントからunreferenceされたら、アンエクスポートする.
-				// (※ 参照カウントが０になるたびに何度でも呼び出される)
-				UnicastRemoteObject.unexportObject(this, false);
-
-			} catch (RemoteException ex) {
-				ex.printStackTrace();
-			}
-		}
-	}
-
-
-	/**
-	 * Callbackボタン押下時
-	 * @param event
-	 */
-	@FXML
-	protected void handleDoCallback(ActionEvent event) {
-		try {
-			// コールバック用のオブジェクトを作成しエクスポートする.
-			// (クライアントからunreferenceされたら、アンエクスポートする.)
-			RMIExampleCallbackImpl callback = new RMIExampleCallbackImpl(
-					0, clientSocketFactory, serverSocketFactory) {
-				private static final long serialVersionUID = -7693543679821540221L;
-
-				@Override
-				public void callback(Message message) throws RemoteException {
-					Platform.runLater(() -> {
-						Alert alert = new Alert(AlertType.INFORMATION);
-						alert.initOwner(getStage());
-						alert.initModality(Modality.NONE);
-						alert.setHeaderText("recv");
-						alert.setContentText(message.toString());
-						alert.show();
-					});
-				}
-			};
-
-			// コールバック
-			CompletableFuture<Void> future = RemoteAction.doRun(remote,
-					remote -> remote.doCallback("Client", callback),
-					getStage());
-
-			future.whenComplete((val, ex) -> {
-				// クライアント側が保持しないことが明らかであれば、
-				// コールバック終了後にエクスポートを解除する.
-				// (unexportObjectしないと残りつづけるので注意)
-				Platform.runLater(() -> {
-					try {
-						System.out.println("★RMIExampleCallback unexportObject");
-						UnicastRemoteObject.unexportObject(callback, false);
-
-					} catch (Exception ex2) {
-						ErrorDialogUtils.showException(getStage(), ex2);
-					}
-				});
-			});
-
-		} catch (RemoteException ex) {
-			ErrorDialogUtils.showException(getStage(), ex);
-		}
 	}
 
 	/**
@@ -330,45 +223,19 @@ public class ClientMainController extends AbstractFXMLController
 	 */
 	@FXML
 	protected void handleSendFile(ActionEvent event) {
-		ByteArrayInputStream bis = new ByteArrayInputStream("hello, world".getBytes());
 		try {
-			RMIInputStream ris = new RMIInputStreamImpl(bis, 0,
-					clientSocketFactory, serverSocketFactory) {
-				private static final long serialVersionUID = 3432605918256177087L;
+			String fileName = "UploadFile" + System.currentTimeMillis() + ".txt";
 
-				@Override
-				public void close() throws IOException {
-					super.close();
-
-					StackTraceElement[] callers = Thread.currentThread()
-							.getStackTrace();
-					String stacktrace = Arrays.stream(callers)
-							.map(caller -> caller.toString())
-							.collect(Collectors.joining("\r\n"));
-
-					Platform.runLater(() -> {
-						Alert alert = new Alert(AlertType.INFORMATION);
-						alert.setHeaderText("closed inst=" + this);
-						alert.setContentText(stacktrace);
-						alert.initModality(Modality.NONE);
-						alert.show();
-					});
-				}
-			};
-			CompletableFuture<Void> future = RemoteAction.doRun(remote,
-					remote -> remote.send("sendFile", ris), getStage());
-			future.whenComplete((val, ex) -> {
-				Platform.runLater(() -> {
-					if (ex != null) {
-						ErrorDialogUtils.showException(getStage(), ex);
-
-					} else {
-						Alert alert = new Alert(AlertType.INFORMATION);
-						alert.setHeaderText("Send Complete");
-						alert.showAndWait();
+			try (Uploader uploader = remote.upload(fileName)) {
+				try {
+					for (int idx = 0; idx < 10; idx++) {
+						uploader.write(("hello, world!" + idx).getBytes());
 					}
-				});
-			});
+
+				} catch (Exception ex) {
+					uploader.cancel(ex);
+				}
+			}
 
 		} catch (IOException ex) {
 			ErrorDialogUtils.showException(getStage(), ex);
@@ -381,58 +248,29 @@ public class ClientMainController extends AbstractFXMLController
 	 */
 	@FXML
 	protected void handleRecvFile(ActionEvent event) {
-		new Thread(()->{
-			try {
-				ByteArrayOutputStream bos = new ByteArrayOutputStream();
-				RMIOutputStream ros = new RMIOutputStreamImpl(bos, 0,
-						clientSocketFactory, serverSocketFactory) {
-					private static final long serialVersionUID = -5981618635857282823L;
+		try {
+			String fileName = "DownloadFile" + System.currentTimeMillis() + ".txt";
 
-					@Override
-					public void close() throws IOException {
-						super.close();
-
-						StackTraceElement[] callers = Thread.currentThread()
-								.getStackTrace();
-						String stacktrace = Arrays.stream(callers)
-								.map(caller -> caller.toString())
-								.collect(Collectors.joining("\r\n"));
-
-						Platform.runLater(() -> {
-							Alert alert = new Alert(AlertType.INFORMATION);
-							alert.setHeaderText("closed inst=" + this);
-							alert.setContentText(stacktrace);
-							alert.initModality(Modality.NONE);
-							alert.show();
-						});
+			try (Downloader downloader = remote.download(fileName)) {
+				try {
+					ByteArrayOutputStream bos = new ByteArrayOutputStream();
+					for (;;) {
+						byte[] data = downloader.read();
+						if (data == null) {
+							break;
+						}
+						bos.write(data);
 					}
-				};
-				CompletableFuture<Void> future = RemoteAction.doRun(remote,
-						remote -> remote.recv("recvFile", ros), getStage());
-				future.whenComplete((val, ex) -> {
-					Platform.runLater(() -> {
-						if (ex != null) {
-							ErrorDialogUtils.showException(getStage(), ex);
+					System.out.println(new String(bos.toByteArray()));
 
-						} else {
-							String msg = new String(bos.toByteArray());
-							Alert alert = new Alert(AlertType.INFORMATION);
-							alert.setContentText("recv: " + msg);
-							alert.showAndWait();
-						}
-
-						try {
-							ros.close();
-						} catch (Exception ex2) {
-							ErrorDialogUtils.showException(getStage(), ex2);
-						}
-					});
-				});
-
-			} catch (IOException ex) {
-				ErrorDialogUtils.showException(getStage(), ex);
+				} catch (Exception ex) {
+					downloader.cancel(ex);
+				}
 			}
-		}).start();
+
+		} catch (IOException ex) {
+			ErrorDialogUtils.showException(getStage(), ex);
+		}
 	}
 
 	@FXML
@@ -460,6 +298,21 @@ public class ClientMainController extends AbstractFXMLController
 				}
 			});
 		});
+	}
+
+	/**
+	 * GCを行う.
+	 */
+	@FXML
+	protected void handleGC() {
+		try {
+			for (int idx = 0; idx < 3; idx++) {
+				System.gc();
+				Thread.sleep(300);
+			}
+		} catch (InterruptedException ex) {
+			ex.printStackTrace();
+		}
 	}
 }
 

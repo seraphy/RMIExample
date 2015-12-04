@@ -1,6 +1,9 @@
 package jp.seraphyware.rmiexample.client;
 
 import java.rmi.RemoteException;
+import java.security.AccessController;
+import java.security.PrivilegedActionException;
+import java.security.PrivilegedExceptionAction;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ForkJoinPool;
 
@@ -35,10 +38,17 @@ public interface RemoteAction<T> {
 		CompletableFuture<Void> future = new CompletableFuture<>();
 		ForkJoinPool.commonPool().execute(() -> {
 			try {
-				run(remote);
+				AccessController
+						.doPrivileged((PrivilegedExceptionAction<Void>) () -> {
+					run(remote);
+					return null;
+				});
 				future.complete(null);
 
 			} catch (Throwable ex) {
+				if (ex instanceof PrivilegedActionException) {
+					ex = ((PrivilegedActionException) ex).getCause();
+				}
 				future.completeExceptionally(ex);
 			}
 		});

@@ -5,12 +5,9 @@ import java.io.UncheckedIOException;
 import java.net.URL;
 import java.rmi.NotBoundException;
 import java.rmi.RemoteException;
-import java.rmi.registry.LocateRegistry;
 import java.rmi.registry.Registry;
-import java.rmi.server.UnicastRemoteObject;
 import java.time.LocalDateTime;
 import java.util.ResourceBundle;
-import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
 import java.util.logging.Level;
@@ -75,22 +72,7 @@ public class ServerMainController extends AbstractFXMLController
 	/**
 	 * 公開したオブジェクト
 	 */
-	private RMIExampleObject exportedObj;
-
-	/**
-	 * サーバソケットファクトリ
-	 */
-	private final RMICustomServerSocketFactory serverSocketFactory = new RMICustomServerSocketFactory();
-
-	/**
-	 * ソケットファクトリ
-	 */
-	private final RMICustomClientSocketFactory clientSocketFactory = new RMICustomClientSocketFactory();
-
-	/**
-	 * ソケット数監視
-	 */
-	private final RMICustomSocketWatcher socketWatcher = new RMICustomSocketWatcher();
+	private MyServerObjectImpl exportedObj;
 
 	@Override
 	protected Stage makeStage() {
@@ -147,15 +129,14 @@ public class ServerMainController extends AbstractFXMLController
 
 		lblStatus.textProperty().bind(strNumOfSocketCounts);
 
+		RemoteObjectHelper helper = RemoteObjectHelper.getInstance();
+		RMICustomSocketWatcher socketWatcher = helper.getSocketWatcher();
 		socketWatcher.setNumOfSocketsListener((server, client) -> {
 			Platform.runLater(() -> {
 				numOfServerSocket.set(server);
 				numOfClientSocket.set(client);
 			});
 		});
-
-		RMICustomServerSocketFactory.setServerSocketListener(socketWatcher);
-		RMICustomClientSocketFactory.setClientSocketListener(socketWatcher);
 
 		onUpdateClientSocketFactoryUUID();
 
@@ -169,9 +150,8 @@ public class ServerMainController extends AbstractFXMLController
 
 	@FXML
 	protected void onUpdateClientSocketFactoryUUID() {
-		UUID uuid = UUID.randomUUID();
-		clientSocketFactory.setUUID(uuid);
-		log.info("◆◆CLIENT SOCKET UUID=" + uuid);
+		RemoteObjectHelper helper = RemoteObjectHelper.getInstance();
+		helper.updateClientSocketFactoryUUID();
 	}
 
 	@FXML
@@ -181,51 +161,18 @@ public class ServerMainController extends AbstractFXMLController
 		}
 
 		try {
-			int registerPort = Integer.parseInt(txtRegisterPort.getText());
 			int exportPort = Integer.parseInt(txtExportPort.getText());
 
-			registry = LocateRegistry.createRegistry(registerPort,
-					clientSocketFactory, serverSocketFactory);
+			RemoteObjectHelper helper = RemoteObjectHelper.getInstance();
+			helper.setExportPort(exportPort);
 
-			exportedObj = new RMIExampleObject() {
+			exportedObj = new MyServerObjectImpl() {
 
 				@Override
 				public String shutdown() throws RemoteException {
-					String ret = super.shutdown();
-
-					CompletableFuture<Void> future = new CompletableFuture<>();
-					Platform.runLater(() -> {
-						try {
-							onUnregister();
-							future.complete(null);
-
-						} catch (Throwable ex) {
-							ErrorDialogUtils.showException(getStage(), ex);
-							future.completeExceptionally(ex);
-						}
-					});
-					try {
-						future.get();
-
-					} catch (InterruptedException ex) {
-						log.log(Level.WARNING, ex.toString(), ex);
-
-					} catch (ExecutionException ex) {
-						throw new RuntimeException(ex.getCause());
-					}
-
-					// ※ 公開停止後、Sleepとガベージコレクトしても接続は即時には切れないようだ
-					// ※ コールバック用に受け取ったリモートオブジェクトも解放させる.
-					try {
-						for (int idx = 0; idx < 3; idx++) {
-							System.gc();
-							Thread.sleep(300);
-						}
-					} catch (Exception ex) {
-						ex.printStackTrace();
-					}
-
-					return ret;
+					// Unregisterをリモート側より要求する
+					onRequestShutdown();
+					return "shutdown";
 				}
 
 				@Override
@@ -243,13 +190,19 @@ public class ServerMainController extends AbstractFXMLController
 					});
 				}
 			};
-			RMIServer stub = (RMIServer) UnicastRemoteObject.exportObject(
-					exportedObj,
-					exportPort, clientSocketFactory, serverSocketFactory);
-			registry.bind("RMIExample", stub);
 
-			log.info("◆◆registered◆◆");
+			// ローカルのRMIレジストリの作成と公開
+			int registerPort = Integer.parseInt(txtRegisterPort.getText());
+			registry = helper.createLocalRegistry(registerPort);
 
+			// サーバオブジェクトをリモートとして公開可能にする.
+			MyServerObject stub = (MyServerObject) helper.exportObject(exportedObj);
+
+			// RMIレジストリにクラス名でリモートオブジェクトを登録する.
+			registry.bind(MyServerObject.class.getName(), stub);
+
+
+			// ボタンの活性制御
 			btnRegister.setDisable(true);
 			btnUnregister.setDisable(false);
 			txtRegisterPort.setDisable(true);
@@ -280,12 +233,14 @@ public class ServerMainController extends AbstractFXMLController
 			return;
 		}
 		try {
+			RemoteObjectHelper helper = RemoteObjectHelper.getInstance();
+
 			// オブジェクトの取り下げ
-			UnicastRemoteObject.unexportObject(exportedObj, true);
+			helper.unexportObject(exportedObj, true);
 			exportedObj = null;
 
 			// RMIレジストリの公開取り下げ
-			UnicastRemoteObject.unexportObject(registry, true);
+			helper.unexportObject(registry, true);
 			registry = null;
 
 			log.info("◆◆unregistered◆◆");
@@ -300,17 +255,52 @@ public class ServerMainController extends AbstractFXMLController
 		}
 	}
 
+	protected void onRequestShutdown() {
+		CompletableFuture<Void> future = new CompletableFuture<>();
+		Platform.runLater(() -> {
+			try {
+				onUnregister();
+				future.complete(null);
+
+			} catch (Throwable ex) {
+				ErrorDialogUtils.showException(getStage(), ex);
+				future.completeExceptionally(ex);
+			}
+		});
+		try {
+			future.get();
+
+		} catch (InterruptedException ex) {
+			log.log(Level.WARNING, ex.toString(), ex);
+
+		} catch (ExecutionException ex) {
+			throw new RuntimeException(ex.getCause());
+		}
+
+		try {
+			for (int idx = 0; idx < 3; idx++) {
+				System.gc();
+				Thread.sleep(300);
+			}
+		} catch (Exception ex) {
+			ex.printStackTrace();
+		}
+	}
+
 	@FXML
 	protected void onSelfTest() {
 		try {
+			RemoteObjectHelper helper = RemoteObjectHelper.getInstance();
 			int registerPort = Integer.parseInt(txtRegisterPort.getText());
-			Registry registry = LocateRegistry.getRegistry(registerPort);
 
-			RMIServer example = (RMIServer) registry.lookup("RMIExample");
+			Registry registry = helper.getRegistry(null, registerPort);
+
+			MyServerObject example = (MyServerObject) registry
+					.lookup(MyServerObject.class.getName());
 			Message message = new Message();
 			message.setTime(LocalDateTime.now());
 			message.setMessage("★FROM LOCAL★");
-			example.sayHello(message);
+			example.echo(message);
 
 		} catch (RemoteException | NotBoundException ex) {
 			ErrorDialogUtils.showException(getStage(), ex);
@@ -319,6 +309,8 @@ public class ServerMainController extends AbstractFXMLController
 
 	@FXML
 	protected void onExit() {
+		RemoteObjectHelper helper = RemoteObjectHelper.getInstance();
+		RMICustomSocketWatcher socketWatcher = helper.getSocketWatcher();
 		if (socketWatcher.getNumOfServerSockets() > 0) {
 			Alert alert = new Alert(AlertType.WARNING);
 			alert.setHeaderText("Still connected.");

@@ -9,10 +9,10 @@
 <entry key="serverport">サーバのポート</entry>
 <entry key="lookup">ルックアップ</entry>
 <entry key="sayHello">Hello送信</entry>
-<entry key="simpleCallback">コールバック</entry>
 <entry key="sendFile">ファイル送信</entry>
 <entry key="recvFile">ファイル受信</entry>
 <entry key="shutdown">サーバの停止</entry>
+<entry key="garbagecollect">ガベージコレクト</entry>
 
 </properties>
 

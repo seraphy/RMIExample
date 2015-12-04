@@ -1,0 +1,9 @@
+grant {
+	//permission java.security.AllPermission;
+
+	permission java.util.PropertyPermission "*", "read";
+	permission java.io.FilePermission "<<ALL FILES>>", "read,write,delete";
+	permission java.net.SocketPermission "*", "connect,resolve";
+};
+
+

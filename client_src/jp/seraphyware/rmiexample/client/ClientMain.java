@@ -3,6 +3,7 @@ package jp.seraphyware.rmiexample.client;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.UncheckedIOException;
+import java.net.URL;
 import java.util.logging.LogManager;
 
 import javafx.application.Application;
@@ -12,7 +13,16 @@ public class ClientMain extends Application {
 
 	@Override
 	public void init() throws Exception {
+		// ロガーの設定
 		initLogger();
+
+		// セキュリティポリシーの適用
+		URL policy = ClientMain.class.getResource("security.policy");
+		System.setProperty("java.security.policy", policy.toExternalForm());
+		System.setProperty("java.security.debug:failure", "access");
+
+		// セキュリティマネージャの有効化
+		System.setSecurityManager(new SecurityManager());
 	}
 
 	@Override

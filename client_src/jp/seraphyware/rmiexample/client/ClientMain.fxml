@@ -52,8 +52,6 @@
 					text="%lookup" />
 				<Button fx:id="btnSayHello" mnemonicParsing="false" onAction="#handleSayHello"
 					text="%sayHello" />
-				<Button fx:id="btnSimpleCallback" mnemonicParsing="false"
-					onAction="#handleDoCallback" text="%simpleCallback" />
 				<Button fx:id="btnSendFile" mnemonicParsing="false" onAction="#handleSendFile"
 					text="%sendFile" />
 				<Button fx:id="btnRecvFile" mnemonicParsing="false" onAction="#handleRecvFile"
@@ -62,6 +60,8 @@
 					text="%dispose" />
 				<Button fx:id="btnShutdown" mnemonicParsing="false" onAction="#handleShutdown"
 					text="%shutdown" />
+				<Button fx:id="btnGC" mnemonicParsing="false" onAction="#handleGC"
+					text="%garbagecollect" />
 			</children>
 		</FlowPane>
 	</children>

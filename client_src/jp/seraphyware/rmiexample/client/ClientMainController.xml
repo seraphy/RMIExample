@@ -7,13 +7,14 @@
 
 <entry key="servername">Server Name</entry>
 <entry key="serverport">Server Port</entry>
+
 <entry key="lookup">Lookup</entry>
 <entry key="sayHello">Say Hello</entry>
-<entry key="simpleCallback">Callback</entry>
 <entry key="sendFile">Send File</entry>
 <entry key="recvFile">Recv File</entry>
 <entry key="dispose">Dispose</entry>
 <entry key="shutdown">Shutdown</entry>
+<entry key="garbagecollect">Garbage Collect</entry>
 
 </properties>
 
