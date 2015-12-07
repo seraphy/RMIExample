@@ -1,19 +1,22 @@
-package jp.seraphyware.rmiexample;
+package jp.seraphyware.rmiexample.rmi;
 
 import java.io.IOException;
 import java.rmi.Remote;
 import java.rmi.RemoteException;
+import java.util.List;
 
 /**
- * サーバオブジェクト用インターフェイス
+ * サーバオブジェクト用ファイル入出力インターフェイス
  */
-public interface MyServerObject extends Remote {
+public interface RemoteFileIO extends Remote {
 
 	/**
-	 * Hello, Worldをサーバー上で表示する.
+	 * ファイル一覧を返す.
+	 * @return ファイルの一覧
 	 * @throws RemoteException
+	 * @throws IOException
 	 */
-	void echo(Message message) throws RemoteException;
+	List<String> getFiles() throws RemoteException, IOException;
 
 	/**
 	 * アップロードする.
@@ -32,11 +35,4 @@ public interface MyServerObject extends Remote {
 	 * @throws IOException
 	 */
 	Downloader download(String name) throws RemoteException, IOException;
-
-	/**
-	 * サーバを停止する
-	 * @return
-	 * @throws RemoteException
-	 */
-	String shutdown() throws RemoteException;
 }

@@ -52,6 +52,8 @@
 					text="%lookup" />
 				<Button fx:id="btnSayHello" mnemonicParsing="false" onAction="#handleSayHello"
 					text="%sayHello" />
+				<Button fx:id="btnListFiles" mnemonicParsing="false" onAction="#handleListFiles"
+					text="%listFiles" />
 				<Button fx:id="btnSendFile" mnemonicParsing="false" onAction="#handleSendFile"
 					text="%sendFile" />
 				<Button fx:id="btnRecvFile" mnemonicParsing="false" onAction="#handleRecvFile"

@@ -5,5 +5,26 @@
 
 <entry key="title">RMIExample (Server)</entry>
 
+<entry key="registerPort">Registry Port:</entry>
+<entry key="exportPort">Export Port:</entry>
+<entry key="workDir">Work Directory:</entry>
+<entry key="browseWorkDirBtn">...</entry>
+
+<entry key="register">Register</entry>
+<entry key="unregister">Unregister</entry>
+
+<entry key="garbagecollect">Garbage Collect</entry>
+<entry key="changeuuid">Change UUID</entry>
+<entry key="selftest">Self Test</entry>
+
+<entry key="panel.control">Control</entry>
+<entry key="panel.test">Test</entry>
+<entry key="logs">Logs</entry>
+
+<entry key="exit">Exit</entry>
+
 </properties>
+
+
+
 

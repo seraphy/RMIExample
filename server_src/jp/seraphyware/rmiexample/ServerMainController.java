@@ -1,5 +1,6 @@
 package jp.seraphyware.rmiexample;
 
+import java.io.File;
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.net.URL;
@@ -14,8 +15,11 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 
 import javafx.application.Platform;
+import javafx.beans.binding.BooleanBinding;
 import javafx.beans.binding.StringBinding;
+import javafx.beans.property.ObjectProperty;
 import javafx.beans.property.SimpleIntegerProperty;
+import javafx.beans.property.SimpleObjectProperty;
 import javafx.fxml.FXML;
 import javafx.fxml.FXMLLoader;
 import javafx.fxml.Initializable;
@@ -26,7 +30,16 @@ import javafx.scene.control.Button;
 import javafx.scene.control.Label;
 import javafx.scene.control.TextArea;
 import javafx.scene.control.TextField;
+import javafx.stage.DirectoryChooser;
 import javafx.stage.Stage;
+import jp.seraphyware.rmiexample.rmi.Message;
+import jp.seraphyware.rmiexample.rmi.RMICustomSocketWatcher;
+import jp.seraphyware.rmiexample.rmi.RemoteControl;
+import jp.seraphyware.rmiexample.rmi.RemoteFileIO;
+import jp.seraphyware.rmiexample.rmi.RemoteObjectHelper;
+import jp.seraphyware.rmiexample.ui.AbstractFXMLController;
+import jp.seraphyware.rmiexample.ui.ErrorDialogUtils;
+import jp.seraphyware.rmiexample.util.XMLResourceBundleControl;
 
 public class ServerMainController extends AbstractFXMLController
 		implements Initializable {
@@ -42,6 +55,12 @@ public class ServerMainController extends AbstractFXMLController
 
 	@FXML
 	private TextField txtExportPort;
+
+	@FXML
+	private TextField txtWorkDir;
+
+	@FXML
+	private Button btnWorkDir;
 
 	@FXML
 	private Button btnRegister;
@@ -67,12 +86,17 @@ public class ServerMainController extends AbstractFXMLController
 	/**
 	 * RMIレジストリ(ローカルマシン上)
 	 */
-	private Registry registry;
+	private ObjectProperty<Registry> registryProperty = new SimpleObjectProperty<>();
 
 	/**
-	 * 公開したオブジェクト
+	 * 公開したリモートファイル入出力オブジェクト
 	 */
-	private MyServerObjectImpl exportedObj;
+	private RemoteFileIOImpl remoteFileIOObj;
+
+	/**
+	 * 公開したリモート制御オブジェクト
+	 */
+	private RemoteControlImpl remoteControlObj;
 
 	@Override
 	protected Stage makeStage() {
@@ -109,6 +133,7 @@ public class ServerMainController extends AbstractFXMLController
 	@Override
 	public void initialize(URL location, ResourceBundle resources) {
 
+		// サーバー･クライアント接続数、およびステータス表示
 		SimpleIntegerProperty numOfServerSocket = new SimpleIntegerProperty();
 		SimpleIntegerProperty numOfClientSocket = new SimpleIntegerProperty();
 
@@ -125,27 +150,75 @@ public class ServerMainController extends AbstractFXMLController
 			}
 		};
 
+		// サーバ接続がある場合はexitは不活性とする
 		btnExit.disableProperty().bind(numOfServerSocket.greaterThan(0));
 
+		// サーバー･クライアント接続数ステータス表示のバインド
 		lblStatus.textProperty().bind(strNumOfSocketCounts);
 
+		// サーバ･クライアントソケットの接続・切断を監視し、
+		// 接続数に変化がある場合は接続数プロパティを更新する.
 		RemoteObjectHelper helper = RemoteObjectHelper.getInstance();
 		RMICustomSocketWatcher socketWatcher = helper.getSocketWatcher();
 		socketWatcher.setNumOfSocketsListener((server, client) -> {
 			Platform.runLater(() -> {
+				// Propertyの変更はJavaFXスレッド上で行う.
 				numOfServerSocket.set(server);
 				numOfClientSocket.set(client);
 			});
 		});
 
+		// クライアントソケットファクトリのUUIDを設定
 		onUpdateClientSocketFactoryUUID();
 
+		// ワークディレクトリが妥当であるか検証する
+		BooleanBinding validWorkDir = new BooleanBinding() {
+			{
+				bind(txtWorkDir.textProperty());
+			}
+
+			@Override
+			protected boolean computeValue() {
+				String strWorkDir = txtWorkDir.getText();
+				if (strWorkDir.trim().length() > 0) {
+					File file = new File(strWorkDir);
+					if (file.isDirectory()) {
+						return true;
+					}
+				}
+				return false;
+			}
+		};
+
+		// 初期値の設定
 		int port = Registry.REGISTRY_PORT;
 		txtRegisterPort.setText(Integer.toString(port));
 		txtExportPort.setText(Integer.toString(port + 1));
+		txtWorkDir.setText(".");
 
-		btnRegister.setDisable(false);
-		btnUnregister.setDisable(true);
+		// 活性制御
+		btnRegister.disableProperty().bind(registryProperty.isNotNull().or(validWorkDir.not()));
+		btnUnregister.disableProperty().bind(registryProperty.isNull());
+		txtRegisterPort.disableProperty().bind(registryProperty.isNotNull());
+		txtExportPort.disableProperty().bind(registryProperty.isNotNull());
+		txtWorkDir.disableProperty().bind(registryProperty.isNotNull());
+		btnWorkDir.disableProperty().bind(registryProperty.isNotNull());
+	}
+
+	@FXML
+	protected void onBrowseWorkDir() {
+		String strWorkDir = txtWorkDir.getText();
+		DirectoryChooser dirChooser = new DirectoryChooser();
+		if (strWorkDir.trim().length() > 0) {
+			File workDir = new File(strWorkDir);
+			if (workDir.isDirectory()) {
+				dirChooser.setInitialDirectory(workDir);
+			}
+		}
+		File choosedDir = dirChooser.showDialog(getStage());
+		if (choosedDir != null) {
+			txtWorkDir.setText(choosedDir.toString());
+		}
 	}
 
 	@FXML
@@ -156,17 +229,37 @@ public class ServerMainController extends AbstractFXMLController
 
 	@FXML
 	protected void onRegister() {
-		if (registry != null) {
+		if (registryProperty.get() != null) {
 			throw new IllegalStateException();
 		}
 
 		try {
-			int exportPort = Integer.parseInt(txtExportPort.getText());
+			// ワークディレクトリ
+			String strWorkDir = txtWorkDir.getText();
+			File dir = new File(strWorkDir);
 
-			RemoteObjectHelper helper = RemoteObjectHelper.getInstance();
-			helper.setExportPort(exportPort);
+			remoteFileIOObj = new RemoteFileIOImpl() {
+				@Override
+				protected void showError(Throwable ex) {
+					ServerMainController.this.showError(ex);
+				}
 
-			exportedObj = new MyServerObjectImpl() {
+				@Override
+				protected void showMessage(String message) {
+					ServerMainController.this.showMessage(message);
+				}
+
+				@Override
+				protected File getBaseDir() {
+					return dir;
+				}
+			};
+
+			remoteControlObj = new RemoteControlImpl() {
+				@Override
+				protected void showMessage(String message) {
+					ServerMainController.this.showMessage(message);
+				}
 
 				@Override
 				public String shutdown() throws RemoteException {
@@ -174,43 +267,47 @@ public class ServerMainController extends AbstractFXMLController
 					onRequestShutdown();
 					return "shutdown";
 				}
-
-				@Override
-				protected void showError(Throwable ex) {
-					Platform.runLater(() -> {
-						ErrorDialogUtils.showException(getStage(), ex);
-					});
-				}
-
-				@Override
-				protected void showMessage(String message) {
-					Platform.runLater(() -> {
-						int en = txtLogs.getLength();
-						txtLogs.insertText(en, message + "\r\n");
-					});
-				}
 			};
+
+			// オブジェクトのエクスポートヘルパ
+			int exportPort = Integer.parseInt(txtExportPort.getText());
+
+			RemoteObjectHelper helper = RemoteObjectHelper.getInstance();
+			helper.setExportPort(exportPort);
 
 			// ローカルのRMIレジストリの作成と公開
 			int registerPort = Integer.parseInt(txtRegisterPort.getText());
-			registry = helper.createLocalRegistry(registerPort);
+			Registry registry = helper.createLocalRegistry(registerPort);
+			registryProperty.set(registry);
 
 			// サーバオブジェクトをリモートとして公開可能にする.
-			MyServerObject stub = (MyServerObject) helper.exportObject(exportedObj);
+			RemoteFileIO remoteFileIOStub = (RemoteFileIO) helper
+					.exportObject(remoteFileIOObj);
+			RemoteControl remoteControlStub = (RemoteControl) helper
+					.exportObject(remoteControlObj);
 
 			// RMIレジストリにクラス名でリモートオブジェクトを登録する.
-			registry.bind(MyServerObject.class.getName(), stub);
-
-
-			// ボタンの活性制御
-			btnRegister.setDisable(true);
-			btnUnregister.setDisable(false);
-			txtRegisterPort.setDisable(true);
-			txtExportPort.setDisable(true);
+			registry.bind(RemoteFileIO.class.getName(), remoteFileIOStub);
+			registry.bind(RemoteControl.class.getName(), remoteControlStub);
 
 		} catch (Exception ex) {
 			ErrorDialogUtils.showException(getStage(), ex);
 		}
+	}
+
+	protected void showError(Throwable ex) {
+		log.log(Level.WARNING, ex.toString(), ex);
+		Platform.runLater(() -> {
+			ErrorDialogUtils.showException(getStage(), ex);
+		});
+	}
+
+	protected void showMessage(String message) {
+		log.info(message);
+		Platform.runLater(() -> {
+			int en = txtLogs.getLength();
+			txtLogs.insertText(en, message + "\r\n");
+		});
 	}
 
 	@FXML
@@ -229,26 +326,25 @@ public class ServerMainController extends AbstractFXMLController
 
 	@FXML
 	protected void onUnregister() {
-		if (registry == null) {
+		if (registryProperty.get() == null) {
 			return;
 		}
 		try {
 			RemoteObjectHelper helper = RemoteObjectHelper.getInstance();
 
 			// オブジェクトの取り下げ
-			helper.unexportObject(exportedObj, true);
-			exportedObj = null;
+			helper.unexportObject(remoteFileIOObj, true);
+			remoteFileIOObj = null;
+
+			helper.unexportObject(remoteControlObj, true);
+			remoteControlObj = null;
 
 			// RMIレジストリの公開取り下げ
+			Registry registry = registryProperty.get();
 			helper.unexportObject(registry, true);
-			registry = null;
+			registryProperty.set(null);
 
 			log.info("◆◆unregistered◆◆");
-
-			btnRegister.setDisable(false);
-			btnUnregister.setDisable(true);
-			txtRegisterPort.setDisable(false);
-			txtExportPort.setDisable(false);
 
 		} catch (Exception ex) {
 			ErrorDialogUtils.showException(getStage(), ex);
@@ -295,8 +391,8 @@ public class ServerMainController extends AbstractFXMLController
 
 			Registry registry = helper.getRegistry(null, registerPort);
 
-			MyServerObject example = (MyServerObject) registry
-					.lookup(MyServerObject.class.getName());
+			RemoteControl example = (RemoteControl) registry
+					.lookup(RemoteControl.class.getName());
 			Message message = new Message();
 			message.setTime(LocalDateTime.now());
 			message.setMessage("★FROM LOCAL★");

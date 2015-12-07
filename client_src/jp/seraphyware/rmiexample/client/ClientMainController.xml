@@ -10,6 +10,7 @@
 
 <entry key="lookup">Lookup</entry>
 <entry key="sayHello">Say Hello</entry>
+<entry key="listFiles">List Files</entry>
 <entry key="sendFile">Send File</entry>
 <entry key="recvFile">Recv File</entry>
 <entry key="dispose">Dispose</entry>

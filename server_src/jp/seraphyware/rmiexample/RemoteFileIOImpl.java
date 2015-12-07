@@ -1,40 +1,45 @@
 package jp.seraphyware.rmiexample;
 
-import java.io.ByteArrayInputStream;
-import java.io.ByteArrayOutputStream;
+import java.io.BufferedInputStream;
+import java.io.BufferedOutputStream;
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.io.UncheckedIOException;
+import java.lang.reflect.Proxy;
 import java.rmi.RemoteException;
-import java.rmi.server.RemoteServer;
-import java.rmi.server.ServerNotActiveException;
 import java.rmi.server.Unreferenced;
+import java.util.Arrays;
+import java.util.List;
 import java.util.Objects;
 import java.util.concurrent.CompletableFuture;
 import java.util.logging.Logger;
 import java.util.stream.Collectors;
-import java.util.stream.IntStream;
+
+import jp.seraphyware.rmiexample.rmi.Downloader;
+import jp.seraphyware.rmiexample.rmi.RemoteFileIO;
+import jp.seraphyware.rmiexample.rmi.RemoteObjectHelper;
+import jp.seraphyware.rmiexample.rmi.Uploader;
 
 /**
  * サーバーオブジェクトの実装.
  */
-public class MyServerObjectImpl implements MyServerObject {
+public class RemoteFileIOImpl implements RemoteFileIO, Unreferenced {
 
 	@Override
-	public void echo(Message message) throws RemoteException {
-		// 接続元クライアントのホスト情報を文字列で取得する.
-		String clientHost;
-		try {
-			clientHost = RemoteServer.getClientHost();
-
-		} catch (ServerNotActiveException ex) {
-			// リモートからでない場合は"not in remote call"となる.
-			clientHost = "Unknown: " + ex.toString();
+	public List<String> getFiles() throws RemoteException, IOException {
+		// あえとFile#listFiles()を使用する.
+		// Files#list() はハンドル解放に漏れがあるように見受けられるので使わない (java8u60)
+		File[] files = getBaseDir().listFiles();
+		if (files == null) {
+			throw new IOException("can't access folder.");
 		}
-
-		// メッセージを表示する.
-		showMessage("clientHost=" + clientHost + "/message=" + message.toString());
+		return Arrays.stream(files).filter(file -> file.isFile())
+				.map(file -> file.getName()).sorted()
+				.collect(Collectors.toList());
 	}
 
 	private static class UploaderImpl<T extends OutputStream> implements Uploader, Unreferenced {
@@ -85,6 +90,10 @@ public class MyServerObjectImpl implements MyServerObject {
 
 		@Override
 		public void unreferenced() {
+			// リモート側よりcloseが呼び出されると、それをトリガーとして
+			// unexportを呼び出すので、結果的にクライアントからのunreferencedは
+			// 呼び出されなくなる.
+			// (クライアント側の参照が放置されて分散GCが働いた場合には効果あり.)
 			logger.info("◆◆UNREFERENCED◆◆" + this);
 			try {
 				close();
@@ -98,20 +107,33 @@ public class MyServerObjectImpl implements MyServerObject {
 	@Override
 	public Uploader upload(String name) throws RemoteException, IOException {
 		showMessage("upload: name=" + name);
+		if (name == null || name.contains("\\") || name.contains("/")) {
+			throw new IOException("illegal file name.");
+		}
 
 		RemoteObjectHelper helper = RemoteObjectHelper.getInstance();
 
-		ByteArrayOutputStream bos = new ByteArrayOutputStream();
-		CompletableFuture<ByteArrayOutputStream> future = new CompletableFuture<>();
+		File outFile = new File(getBaseDir(), name);
+
+		OutputStream bos = new BufferedOutputStream(new FileOutputStream(outFile));
+		showMessage("file open. " + outFile);
+
+		CompletableFuture<OutputStream> future = new CompletableFuture<>();
 		Uploader uploader = new UploaderImpl<>(bos, future);
 
 		future.whenComplete((ret, ex) -> {
+			try {
+				bos.close();
+				showMessage("file closed.");
+
+			} catch (Exception ex2) {
+				if (ex == null) {
+					ex = ex2;
+				}
+			}
+
 			if (ex != null) {
 				showMessage(ex.toString());
-
-			} else {
-				byte[] data = ret.toByteArray();
-				showMessage(new String(data));
 			}
 
 			try {
@@ -159,6 +181,8 @@ public class MyServerObjectImpl implements MyServerObject {
 
 			// 実際に読み込めたサイズがバッファサイズより小さければ
 			// 実際のサイズに合わせた配列に詰め替えて返す.
+			// ※ TCP/IPに不要なバイトを流すほうが、
+			// 配列を作り直すよりコストが高いと思われるため。
 			byte[] cpy = new byte[len];
 			System.arraycopy(buf, 0, cpy, 0, len);
 			return cpy;
@@ -186,6 +210,10 @@ public class MyServerObjectImpl implements MyServerObject {
 
 		@Override
 		public void unreferenced() {
+			// リモート側よりcloseが呼び出されると、それをトリガーとして
+			// unexportを呼び出すので、結果的にクライアントからのunreferencedは
+			// 呼び出されなくなる.
+			// (クライアント側の参照が放置されて分散GCが働いた場合には効果あり.)
 			logger.info("◆◆UNREFERENCED◆◆" + this);
 			try {
 				close();
@@ -200,17 +228,28 @@ public class MyServerObjectImpl implements MyServerObject {
 	public Downloader download(String name)
 			throws RemoteException, IOException {
 		showMessage("download: name=" + name);
+
+		File inpFile = new File(getBaseDir(), name);
+
+		InputStream is = new BufferedInputStream(new FileInputStream(inpFile));
+		showMessage("file open. " + inpFile);
+
 		RemoteObjectHelper helper = RemoteObjectHelper.getInstance();
 
-		String msgs = IntStream.range(0, 100)
-				.mapToObj(idx -> "Hello, World!" + idx)
-				.collect(Collectors.joining("\r\n"));
-
-		ByteArrayInputStream bis = new ByteArrayInputStream(msgs.getBytes());
-		CompletableFuture<ByteArrayInputStream> future = new CompletableFuture<>();
-		Downloader downloader = new DownloaderImpl<>(bis, future);
+		CompletableFuture<InputStream> future = new CompletableFuture<>();
+		Downloader downloader = new DownloaderImpl<>(is, future);
 
 		future.whenComplete((ret, ex) -> {
+			try {
+				is.close();
+				showMessage("file closed.");
+
+			} catch (Exception ex2) {
+				if (ex == null) {
+					ex = ex2;
+				}
+			}
+
 			if (ex != null) {
 				showMessage("download aborted." + ex.toString());
 
@@ -228,10 +267,16 @@ public class MyServerObjectImpl implements MyServerObject {
 		return helper.exportObject(downloader);
 	}
 
-
 	@Override
-	public String shutdown() throws RemoteException {
-		return "do nothing";
+	public void unreferenced() {
+		// 参照数が0になるたびに呼び出される.
+		// (クライアント側で参照を放置し分散GCでゼロになるたびに呼び出される.)
+		showMessage("★★UNREFERENCED: " + this + "/isProxyClass="
+				+ Proxy.isProxyClass(this.getClass()));
+	}
+
+	protected File getBaseDir() {
+		return new File(".");
 	}
 
 	protected void showError(Throwable ex) {

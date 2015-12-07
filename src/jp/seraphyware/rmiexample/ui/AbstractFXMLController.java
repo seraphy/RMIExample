@@ -1,4 +1,4 @@
-package jp.seraphyware.rmiexample;
+package jp.seraphyware.rmiexample.ui;
 
 import javafx.scene.Parent;
 import javafx.scene.Scene;
@@ -39,6 +39,10 @@ public abstract class AbstractFXMLController {
 		if (stage == null) {
 			setStage(makeStage());
 		}
+	}
+
+	public boolean hasStage() {
+		return stage != null;
 	}
 
 	protected Stage makeStage() {

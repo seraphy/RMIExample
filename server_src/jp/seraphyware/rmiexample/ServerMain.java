@@ -46,6 +46,19 @@ public final class ServerMain extends Application {
 		stage.show();
 	}
 
+	@Override
+	public void stop() throws Exception {
+		// 分散GCを早期実施させるため明示的にGCを行う.
+		for (int idx = 0; idx < 3; idx++) {
+			System.gc();
+			Thread.sleep(100);
+		}
+
+		// プロセスを終了する.
+		log.info("Process Exit.");
+		System.exit(0);
+	}
+
 	/**
 	 * エントリポイント
 	 * @param args

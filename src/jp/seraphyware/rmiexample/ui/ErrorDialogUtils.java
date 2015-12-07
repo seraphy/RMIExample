@@ -1,4 +1,4 @@
-package jp.seraphyware.rmiexample;
+package jp.seraphyware.rmiexample.ui;
 
 import java.io.PrintWriter;
 import java.io.StringWriter;

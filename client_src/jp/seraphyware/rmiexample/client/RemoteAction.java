@@ -1,15 +1,10 @@
 package jp.seraphyware.rmiexample.client;
 
 import java.rmi.RemoteException;
-import java.security.AccessController;
-import java.security.PrivilegedActionException;
-import java.security.PrivilegedExceptionAction;
 import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.ForkJoinPool;
 
-import javafx.application.Platform;
 import javafx.stage.Window;
-import jp.seraphyware.rmiexample.ErrorDialogUtils;
+import jp.seraphyware.rmiexample.ui.ErrorDialogUtils;
 
 /**
  * リモート呼び出し用ヘルパ
@@ -36,29 +31,20 @@ public interface RemoteAction<T> {
 			throw new IllegalStateException();
 		}
 		CompletableFuture<Void> future = new CompletableFuture<>();
-		ForkJoinPool.commonPool().execute(() -> {
+		BgExecutor.getInstance().execute(() -> {
 			try {
-				AccessController
-						.doPrivileged((PrivilegedExceptionAction<Void>) () -> {
-					run(remote);
-					return null;
-				});
+				run(remote);
 				future.complete(null);
 
 			} catch (Throwable ex) {
-				if (ex instanceof PrivilegedActionException) {
-					ex = ((PrivilegedActionException) ex).getCause();
-				}
 				future.completeExceptionally(ex);
 			}
 		});
-		future.whenComplete((value, ex) -> {
+		future.whenCompleteAsync((value, ex) -> {
 			if (ex != null) {
-				Platform.runLater(() -> {
-					ErrorDialogUtils.showException(owner, ex);
-				});
+				ErrorDialogUtils.showException(owner, ex);
 			}
-		});
+		}, FxExecutor.getInstance());
 		return future;
 	}
 

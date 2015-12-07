@@ -1,4 +1,4 @@
-package jp.seraphyware.rmiexample;
+package jp.seraphyware.rmiexample.rmi;
 
 import java.io.Serializable;
 import java.time.LocalDateTime;

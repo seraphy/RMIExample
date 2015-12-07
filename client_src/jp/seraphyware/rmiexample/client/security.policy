@@ -1,9 +1,18 @@
+grant codeBase "file:${java.home}/lib/jfxrt.jar" {
+	permission java.security.AllPermission;
+};
+
+grant codeBase "file:${java.home}/lib/ext/jfxrt.jar" {
+	permission java.security.AllPermission;
+};
+
 grant {
 	//permission java.security.AllPermission;
 
 	permission java.util.PropertyPermission "*", "read";
 	permission java.io.FilePermission "<<ALL FILES>>", "read,write,delete";
 	permission java.net.SocketPermission "*", "connect,resolve";
+	permission java.lang.RuntimePermission "modifyThread";
 };
 
 

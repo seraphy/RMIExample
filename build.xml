@@ -19,6 +19,9 @@
 		<delete dir="bin"/>
 		<mkdir dir="bin"/>
 		<javac srcdir="src" destdir="bin"
+			debug="true"
+			target="1.8"
+			source="1.8"
 			includeantruntime="false"/>
 	</target>
 
@@ -41,6 +44,7 @@
 				mainClass="jp.seraphyware.rmiexample.ServerMain"/>
 
 			<fileset dir="bin"/>
+			<fileset dir="src" excludes="**/*.java"/>
 			<fileset dir="server_bin"/>
 			<fileset dir="server_src" excludes="**/*.java"/>
 
@@ -72,6 +76,7 @@
 				mainClass="jp.seraphyware.rmiexample.client.ClientMain"/>
 
 			<fileset dir="bin"/>
+			<fileset dir="src" excludes="**/*.java"/>
 			<fileset dir="client_bin"/>
 			<fileset dir="client_src" excludes="**/*.java"/>
 

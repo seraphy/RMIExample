@@ -1,5 +1,5 @@
 # RMIExample
-RMIサーバとクライアントの実験例 (Java8u40)
+RMIサーバとクライアントの実験 (Java8u60)
 
 ## ビルド方法
 antにより、RMIExampleServer.jarとRMIExampleClient.jarが生成される。
@@ -8,10 +8,9 @@ antにより、RMIExampleServer.jarとRMIExampleClient.jarが生成される。
 
 
 ## RMIExampleServer
-RMIExampleServerはコンソールアプリであり、第一引数にポートを指定できる。
-起動するとローカルホスト上の指定したポートでRMIの待ち受けを行う。
+RMIExampleServerはJavaFXアプリである。
+画面上で任意のレジストリポートとエクスポートポートを指定してサーバを開始できる。
 
-接続されたクライアント側よりShutdownが呼び出されることで終了する。
 
 
 ## RMIExampleClient

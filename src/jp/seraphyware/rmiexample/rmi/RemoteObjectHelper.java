@@ -1,4 +1,4 @@
-package jp.seraphyware.rmiexample;
+package jp.seraphyware.rmiexample.rmi;
 
 import java.lang.reflect.Proxy;
 import java.rmi.Remote;

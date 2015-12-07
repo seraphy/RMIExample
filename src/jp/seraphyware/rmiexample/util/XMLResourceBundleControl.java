@@ -1,4 +1,4 @@
-package jp.seraphyware.rmiexample;
+package jp.seraphyware.rmiexample.util;
 
 import java.io.BufferedInputStream;
 import java.io.IOException;
