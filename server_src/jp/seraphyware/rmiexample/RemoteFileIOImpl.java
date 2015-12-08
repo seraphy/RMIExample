@@ -166,8 +166,18 @@ public class RemoteFileIOImpl implements RemoteFileIO, Unreferenced {
 		}
 
 		@Override
-		public byte[] read() throws RemoteException, IOException {
-			byte[] buf = new byte[4096];
+		public long fileSize() throws RemoteException, IOException {
+			return -1;
+		}
+
+		@Override
+		public long lastModified() throws RemoteException, IOException {
+			return -1;
+		}
+
+		@Override
+		public byte[] read(int bufsiz) throws RemoteException, IOException {
+			byte[] buf = new byte[bufsiz];
 			int len = send.read(buf);
 			if (len < 0) {
 				// EOFに達している場合
@@ -237,7 +247,18 @@ public class RemoteFileIOImpl implements RemoteFileIO, Unreferenced {
 		RemoteObjectHelper helper = RemoteObjectHelper.getInstance();
 
 		CompletableFuture<InputStream> future = new CompletableFuture<>();
-		Downloader downloader = new DownloaderImpl<>(is, future);
+		Downloader downloader = new DownloaderImpl<InputStream>(is, future) {
+
+			@Override
+			public long lastModified() throws RemoteException, IOException {
+				return inpFile.lastModified();
+			}
+
+			@Override
+			public long fileSize() throws RemoteException, IOException {
+				return inpFile.length();
+			}
+		};
 
 		future.whenComplete((ret, ex) -> {
 			try {

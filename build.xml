@@ -23,6 +23,9 @@
 			target="1.8"
 			source="1.8"
 			includeantruntime="false"/>
+		<copy todir="bin">
+			<fileset dir="src" excludes="**/*.java"/>
+		</copy>
 	</target>
 
 	<target name="makeServer" description="サーバのビルド"
@@ -38,15 +41,16 @@
 				<pathelement path="bin"/>
 			</classpath>
 		</javac>
+		<copy todir="server_bin">
+			<fileset dir="server_src" excludes="**/*.java"/>
+		</copy>
 
 		<fx:jar destfile="${serverApp.title}.jar">
 			<fx:application name="${serverapp.title}"
 				mainClass="jp.seraphyware.rmiexample.ServerMain"/>
 
 			<fileset dir="bin"/>
-			<fileset dir="src" excludes="**/*.java"/>
 			<fileset dir="server_bin"/>
-			<fileset dir="server_src" excludes="**/*.java"/>
 
 			<manifest>
 				<attribute name="Implementation-Vendor" value="seraphyware.jp"/>
@@ -67,6 +71,9 @@
 				<pathelement path="bin"/>
 			</classpath>
 		</javac>
+		<copy todir="client_bin">
+			<fileset dir="client_src" excludes="**/*.java"/>
+		</copy>
 
 		<fx:jar destfile="${clientApp.title}.jar">
 			<fx:application
@@ -76,9 +83,7 @@
 				mainClass="jp.seraphyware.rmiexample.client.ClientMain"/>
 
 			<fileset dir="bin"/>
-			<fileset dir="src" excludes="**/*.java"/>
 			<fileset dir="client_bin"/>
-			<fileset dir="client_src" excludes="**/*.java"/>
 
 			<manifest>
 				<attribute name="Implementation-Vendor" value="seraphyware.jp"/>

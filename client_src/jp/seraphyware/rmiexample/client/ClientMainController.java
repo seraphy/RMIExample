@@ -11,6 +11,7 @@ import java.nio.ByteBuffer;
 import java.nio.channels.FileChannel;
 import java.nio.file.Files;
 import java.nio.file.StandardOpenOption;
+import java.nio.file.attribute.FileTime;
 import java.rmi.registry.Registry;
 import java.time.LocalDateTime;
 import java.util.List;
@@ -343,6 +344,7 @@ public class ClientMainController extends AbstractFXMLController
 
 							} catch (Exception ex) {
 								uploader.cancel(ex);
+								throw ex;
 							}
 						}
 					}
@@ -407,27 +409,36 @@ public class ClientMainController extends AbstractFXMLController
 
 			Task<Void> worker = new Task<Void>() {
 				protected Void call() throws Exception {
-					long total = 0;
 					try (OutputStream bos = new BufferedOutputStream(
 							new FileOutputStream(outFile))) {
 						try (Downloader downloader = remoteFileIO
 								.download(fileName)) {
 							try {
+								long readSize = 0;
+								long fileSize = downloader.fileSize();
+								FileTime lastModified = FileTime
+										.fromMillis(downloader.lastModified());
+
+								final int bufsiz = 1024 * 512; // 512kib
 								for (;;) {
-									updateMessage(Long.toString(total));
+									updateMessage(lastModified + " " + readSize
+											+ "/" + fileSize);
+									updateProgress(readSize, fileSize);
+
 									if (isCancelled()) {
 										throw new RuntimeException("Cancel");
 									}
-									byte[] data = downloader.read();
+									byte[] data = downloader.read(bufsiz);
 									if (data == null) {
 										break;
 									}
 									bos.write(data);
-									total += data.length;
+									readSize += data.length;
 								}
 
 							} catch (Exception ex) {
 								downloader.cancel(ex);
+								throw ex;
 							}
 						}
 					}

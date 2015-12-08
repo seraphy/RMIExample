@@ -6,7 +6,11 @@ import java.rmi.RemoteException;
 
 public interface Downloader extends Remote, AutoCloseable {
 
-	byte[] read() throws RemoteException, IOException;
+	long lastModified() throws RemoteException, IOException;
+
+	long fileSize() throws RemoteException, IOException;
+
+	byte[] read(int bufsiz) throws RemoteException, IOException;
 
 	void cancel(Throwable ex) throws RemoteException;
 
